@@ -46,6 +46,8 @@ class FormController extends Controller
             'fields.*.name'     => ['required','string','max:150'],
             'fields.*.type'     => ['required','in:text,number,textarea,select,radio,checkbox,date,file,email,tel'],
             'fields.*.required' => ['boolean'],
+            'fields.*.options'  => ['nullable','array'],   // ⬅️ tambahin ini
+            'fields.*.options.*'=> ['string','max:255'],
         ]);
 
         $slug = $validated['slug'] ?: Str::slug($validated['name']);
@@ -59,7 +61,15 @@ class FormController extends Controller
             'slug'        => $slug,
             'description' => $validated['description'] ?? null,
             'is_active'   => (bool)($validated['is_active'] ?? false),
-            'fields'      => $validated['fields'],
+            array_map(function($f) {
+                // pastikan ada 'options' walaupun kosong
+                if (in_array($f['type'], ['select','radio','checkbox'])) {
+                    $f['options'] = $f['options'] ?? [];
+                } else {
+                    $f['options'] = [];
+                }
+                return $f;
+            }, $validated['fields']),
         ]);
 
         return redirect()->route('admin.forms.edit', $form->_id)->with('status', 'Form created.');
@@ -86,6 +96,8 @@ class FormController extends Controller
             'fields.*.name'     => ['required','string','max:150'],
             'fields.*.type'     => ['required','in:text,number,textarea,select,radio,checkbox,date,file,email,tel'],
             'fields.*.required' => ['boolean'],
+            'fields.*.options'  => ['nullable','array'],   // ⬅️ tambahin ini
+            'fields.*.options.*'=> ['string','max:255'],
         ]);
 
         // pastikan slug unik (kecuali dirinya)

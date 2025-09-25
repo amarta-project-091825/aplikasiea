@@ -2,6 +2,7 @@
 use App\Http\Controllers\Admin\FormController;
 use App\Http\Controllers\DynamicFormController;
 use App\Http\Controllers\FormSubmissionPublicController;
+use App\Http\Controllers\FormSubmissionTableController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -28,7 +29,10 @@ Route::middleware(['auth','verified','role:admin','role:1'])
         Route::get('/__ping', fn() => 'admin pong');
         Route::resource('users', UserManagementController::class)->except(['show']);
         Route::resource('forms', FormController::class); // index, create, store, edit, update, destroy
-
+        Route::get('/submission-table', [FormSubmissionTableController::class, 'index'])->name('submission.table');
+        Route::get('/submission-table/{id}/edit', [FormSubmissionTableController::class, 'edit'])->name('submission.edit');
+        Route::put('/submission-table/{id}', [FormSubmissionTableController::class, 'update'])->name('submission.update');
+        Route::delete('/submission-table/{id}', [FormSubmissionTableController::class, 'destroy'])->name('submission.destroy');
 });
 
 Route::middleware(['auth','verified'])->group(function () {

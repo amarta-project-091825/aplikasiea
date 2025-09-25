@@ -25,6 +25,10 @@
                         <x-nav-link :href="route('admin.forms.index')" :active="request()->routeIs('admin.forms.*')">
                             {{ __('Form Builder') }}
                         </x-nav-link>
+
+                        <x-nav-link :href="route('admin.submission.table')" :active="request()->routeIs('admin.submission.*')">
+                            {{ __('Submission Table') }}
+                        </x-nav-link>
                     @endif
                       {{-- Daftar Form untuk semua user --}}
                         <x-nav-link :href="route('forms.list')" :active="request()->routeIs('forms.list') || request()->routeIs('forms.show')">
