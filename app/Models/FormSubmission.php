@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Models;
+
+use MongoDB\Laravel\Eloquent\Model;
+
+class FormSubmission extends Model
+{
+    protected $connection = 'mongodb';
+    protected $collection = 'form_submissions';
+    protected $primaryKey = '_id';
+    public $incrementing = true;
+
+    protected $fillable = [
+        'form_id', 'data', 'files', 'submitted_by'
+    ];
+
+    protected $casts = [
+        'data' => 'array',
+        'files' => 'array',
+    ];
+
+    public function form()
+    {
+        return $this->belongsTo(Form::class, 'form_id', '_id');
+    }
+}
