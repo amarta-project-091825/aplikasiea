@@ -21,24 +21,44 @@ class FormSubmissionTableController extends Controller
 
     public function edit($id)
     {
-    $submission = FormSubmission::with('form')->findOrFail($id);
-    $form = $submission->form;
-    return view('admin.submission-table.edit', compact('submission', 'form'));
+        $submission = FormSubmission::with('form')->findOrFail($id);
+        $form = $submission->form;
+
+        // Ambil semua nama field dari definisi form
+        $formFields = collect($form->fields)->pluck('name')->toArray();
+
+        // Ambil semua key dari data submission
+        $submissionFields = array_keys($submission->data ?? []);
+
+        // Gabungkan biar field lama & baru semuanya tampil
+        $allFields = collect(array_unique(array_merge($formFields, $submissionFields)));
+
+        return view('admin.submission-table.edit', compact('submission', 'form', 'allFields'));
     }
 
     public function update(Request $request, $id)
     {
         $submission = FormSubmission::findOrFail($id);
 
-        $data = $submission->data ?? [];
-        foreach ($data as $key => $value) {
-            $data[$key] = $request->input($key, $value);
+    // Ambil semua input kecuali _token, _method
+    $inputData = $request->except(['_token', '_method']);
+
+    // Proses: kalau ada checkbox, pastikan tetap array (kalau unchecked bisa null → kita jadikan [])
+    $form = $submission->form;
+    foreach ($form->fields as $field) {
+        $name = $field['name'];
+        if (($field['type'] ?? '') === 'checkbox') {
+            $inputData[$name] = $request->input($name, []); // default []
         }
+    }
 
-        $submission->data = $data;
-        $submission->save();
+    // Simpan ke submission
+    $submission->data = $inputData;
+    $submission->save();
 
-        return redirect()->route('admin.submission.table')->with('success', 'Data berhasil diperbarui.');
+    return redirect()
+        ->route('admin.submission.table')
+        ->with('success', 'Submission berhasil diperbarui.');
     }
 
     public function destroy($id)
