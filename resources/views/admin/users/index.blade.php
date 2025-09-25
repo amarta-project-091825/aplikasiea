@@ -50,14 +50,22 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                                         <div class="inline-flex gap-2">
-                                            <a href="{{ route('admin.users.edit', $u->_id) }}"
-                                               class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                                Edit
-                                            </a>
-                                            <button type="button"
-                                                class="px-3 py-1 rounded border border-red-300 text-red-700 hover:bg-red-50"
-                                                disabled
-                                                title="Stub UI">Hapus</button>
+                                            @if($u->role_id !== 1)
+                                                <a href="{{ route('admin.users.edit', $u->_id) }}"
+                                                class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                    Edit
+                                                </a>
+
+                                                <form action="{{ route('admin.users.destroy', $u->_id) }}" method="POST" 
+                                                    onsubmit="return confirm('Hapus anggota ini?')" class="inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                            class="px-3 py-1 rounded border border-red-300 text-red-700 hover:bg-red-50">
+                                                        Hapus
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
