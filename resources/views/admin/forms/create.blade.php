@@ -8,7 +8,7 @@
             {{-- Debug sementara --}}
             <div class="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded">Form Builder should render below.</div>
 
-            <form method="post" action="{{ route('admin.forms.store') }}">
+            <form method="post" action="{{ route('admin.forms.store') }}" enctype="multipart/form-data">
                 @csrf
                 @include('admin.forms._builder', ['form' => null])
                 <div class="mt-6">

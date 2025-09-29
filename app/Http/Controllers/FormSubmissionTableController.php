@@ -37,29 +37,51 @@ class FormSubmissionTableController extends Controller
     }
 
     public function update(Request $request, $id)
-    {
-        $submission = FormSubmission::findOrFail($id);
+{
+    $submission = FormSubmission::with('form')->findOrFail($id);
 
-    // Ambil semua input kecuali _token, _method
-    $inputData = $request->except(['_token', '_method']);
-
-    // Proses: kalau ada checkbox, pastikan tetap array (kalau unchecked bisa null → kita jadikan [])
     $form = $submission->form;
+    $data = $submission->data ?? [];
+    $files = $submission->files ?? [];
+
     foreach ($form->fields as $field) {
         $name = $field['name'];
-        if (($field['type'] ?? '') === 'checkbox') {
-            $inputData[$name] = $request->input($name, []); // default []
+        $type = $field['type'] ?? 'text';
+
+        if ($type === 'checkbox') {
+            // pastikan checkbox selalu array
+            $data[$name] = $request->input($name, []);
+        }
+        elseif ($type === 'file') {
+            if ($request->hasFile($name)) {
+                $uploaded = $request->file($name);
+
+                // Replace file lama
+                $files[$name] = [
+                    'name' => $uploaded->getClientOriginalName(),
+                    'mime' => $uploaded->getMimeType(),
+                    'size' => $uploaded->getSize(),
+                    'data' => 'data:' . $uploaded->getMimeType() . ';base64,' . base64_encode(file_get_contents($uploaded->getRealPath())),
+                ];
+
+                // opsional: simpan nama file ke data juga
+                $data[$name] = $uploaded->getClientOriginalName();
+            }
+        }
+        else {
+            $data[$name] = $request->input($name);
         }
     }
 
-    // Simpan ke submission
-    $submission->data = $inputData;
+    $submission->data = $data;
+    $submission->files = $files;
     $submission->save();
 
     return redirect()
         ->route('admin.submission.table')
         ->with('success', 'Submission berhasil diperbarui.');
-    }
+}
+
 
     public function destroy($id)
     {

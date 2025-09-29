@@ -64,17 +64,29 @@
                                     </label>
                                 @endforeach
 
-                            {{-- FILE --}}
-                            @elseif($type === 'file')
-                                @if(!empty($submission->files[$fieldName]))
-                                    <div class="mb-2">
-                                        <a href="{{ Storage::url($submission->files[$fieldName]) }}" target="_blank" class="text-indigo-600 underline">
-                                            Lihat file lama
-                                        </a>
-                                    </div>
-                                @endif
-                                <input type="file" name="{{ $fieldName }}"
-                                       class="mt-1 block w-full text-sm text-gray-700 dark:text-gray-200">
+                                {{-- FILE --}}
+                                @elseif($type === 'file')
+                                    @php
+                                        $file = $submission->files[$fieldName] ?? null;
+                                    @endphp
+
+                                    @if($file)
+                                        <div class="mb-2">
+                                            @if(Str::startsWith($file['mime'], 'image/'))
+                                                <img src="{{ $file['data'] }}" 
+                                                    alt="{{ $file['name'] }}" 
+                                                    class="h-32 w-auto rounded mb-2 border">
+                                            @else
+                                                <a href="{{ $file['data'] }}" download="{{ $file['name'] }}" 
+                                                class="text-indigo-600 underline">
+                                                    Lihat file lama ({{ $file['name'] }})
+                                                </a>
+                                            @endif
+                                        </div>
+                                    @endif
+
+                                    <input type="file" name="{{ $fieldName }}" 
+                                        class="mt-1 block w-full text-sm text-gray-700 dark:text-gray-200">
 
                             {{-- DATE / EMAIL / TEL / NUMBER / TEXT --}}
                             @else

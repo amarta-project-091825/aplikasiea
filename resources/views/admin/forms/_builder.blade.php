@@ -101,8 +101,8 @@ $initialFields = old('fields')
 
                 <template x-if="f.type==='file'">
                     <div class="flex-1">
-                        <x-input-label value="Mimes (pisahkan koma, ex: jpg,png,pdf)" />
-                        <input class="mt-1 w-full border rounded p-2" x-model="f.mimes_csv" placeholder="jpg,png,pdf">
+                        <x-input-label value="Upload File" />
+                        <input type="file" name="files[{{'${i}'}}]" class="mt-1 w-full border rounded p-2">
                         <small class="text-gray-500">Gunakan Max sebagai batas ukuran (KB).</small>
                     </div>
                 </template>

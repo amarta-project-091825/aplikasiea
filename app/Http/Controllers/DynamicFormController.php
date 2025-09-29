@@ -80,11 +80,17 @@ class DynamicFormController extends Controller
             if ($f['type'] === 'file') {
                 $name = $f['name'];
                 if ($request->hasFile($name)) {
-                    $path = $request->file($name)->store('dynamic-forms/'.$form->_id, 'public');
-                    $filesSaved[$name] = $path;
+                    $file = $request->file($name);
+                    $filesSaved[$name] = [
+                        'name' => $file->getClientOriginalName(),
+                        'mime' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                        'data' => base64_encode(file_get_contents($file->getRealPath())),
+                    ];
                 }
             }
         }
+
 
         $submission = FormSubmission::create([
             'form_id'      => $form->_id,

@@ -31,20 +31,57 @@
                             @forelse($submissions as $s)
                                 <tr>
                                     @foreach($columns as $col)
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                            @php
-                                                $value = $s->data[$col] ?? '-';
-                                                if (is_array($value)) {
-                                                    $value = implode(', ', $value); // gabung array jadi string
-                                                }
-                                            @endphp
-                                            {{ $value }}
-                                        </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                        @php
+                                            $file = $s->files[$col] ?? null;
+                                            $val  = $s->data[$col] ?? '-';
+                                        @endphp
+
+                                        {{-- Jika kolom ini adalah file --}}
+                                        @if($file)
+                                            {{-- Multiple files --}}
+                                            @if(isset($file[0]) && is_array($file[0]))
+                                                @foreach($file as $f)
+                                                    @if(Str::startsWith($f['mime'], 'image/'))
+                                                        <img src="{{ $f['data'] }}" 
+                                                            alt="{{ $f['name'] }}" 
+                                                            class="h-16 w-auto rounded shadow mb-1">
+                                                    @else
+                                                        <a href="{{ $f['data'] }}" 
+                                                        download="{{ $f['name'] }}" 
+                                                        class="text-indigo-600 underline block">
+                                                            {{ $f['name'] }}
+                                                        </a>
+                                                    @endif
+                                                @endforeach
+                                            {{-- Single file --}}
+                                            @else
+                                                @if(Str::startsWith($file['mime'], 'image/'))
+                                                    <img src="{{ $file['data'] }}" 
+                                                        alt="{{ $file['name'] }}" 
+                                                        class="h-16 w-auto rounded shadow">
+                                                @else
+                                                    <a href="{{ $file['data'] }}" 
+                                                    download="{{ $file['name'] }}" 
+                                                    class="text-indigo-600 underline">
+                                                        {{ $file['name'] }}
+                                                    </a>
+                                                @endif
+                                            @endif
+                                        {{-- Jika bukan file --}}
+                                        @else
+                                            @if(is_array($val))
+                                                {{ implode(', ', $val) }}
+                                            @else
+                                                {{ $val }}
+                                            @endif
+                                        @endif
+                                    </td>
                                     @endforeach
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                                         <div class="inline-flex gap-2">
                                             <a href="{{ route('admin.submission.edit',$s->_id) }}"
-                                               class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                            class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
                                                 Edit
                                             </a>
                                             <form action="{{ route('admin.submission.destroy',$s->_id) }}" method="post" class="inline">
@@ -64,7 +101,6 @@
                         </tbody>
                     </table>
                 </div>
-
                 {{-- Pagination --}}
                 <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
                     {{ $submissions->links() }}
