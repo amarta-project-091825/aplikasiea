@@ -20,7 +20,7 @@ $initialFields = old('fields')
             <x-text-input name="name" value="{{ old('name', $form->name ?? '') }}" class="mt-1 w-full" required />
         </div>
         <div>
-            <x-input-label value="Slug (opsional, auto jika kosong saat create)" />
+            <x-input-label value="Slug (samakan dengan label namun jangan gunakan spasi)" />
             <x-text-input name="slug" value="{{ old('slug', $form->slug ?? '') }}" class="mt-1 w-full" />
         </div>
         <div class="sm:col-span-2">
