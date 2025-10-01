@@ -57,13 +57,11 @@ class DynamicFormController extends Controller
                     $rules[$name] = [$req, Rule::in($options)];
                     break;
                 case 'checkbox':
-                    // checkbox banyak pilihan -> array of values in options
                     $options = $f['options'] ?? [];
                     $rules[$name] = [$req,'array'];
                     $rules[$name.'.*'] = [Rule::in($options)];
                     break;
                 case 'file':
-                    // boleh set mime/size di f['mimes'], f['max']
                     $m = isset($f['mimes']) ? 'mimes:'.implode(',', (array)$f['mimes']) : 'file';
                     $rules[$name] = array_filter([$req, $m, isset($f['max']) ? 'max:'.$f['max'] : null]);
                     break;
