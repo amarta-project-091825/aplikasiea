@@ -12,6 +12,21 @@
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Daftar Submission</h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400">Data dinamis dari form yang telah diisi pengguna.</p>
                 </div>
+
+                {{-- Dropdown filter form --}}
+                <div>
+                    <form method="GET" action="{{ route('admin.submission.table') }}">
+                        <select name="form_id" onchange="this.form.submit()"
+                            class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 rounded-md shadow-sm">
+                            <option value="">-- Semua Form --</option>
+                            @foreach($forms as $form)
+                                <option value="{{ $form->_id }}" {{ request('form_id') == $form->_id ? 'selected' : '' }}>
+                                    {{ $form->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </form>
+                </div>
             </div>
 
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">

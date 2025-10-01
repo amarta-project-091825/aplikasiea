@@ -33,6 +33,9 @@ Route::middleware(['auth','verified','role:admin','role:1'])
         Route::get('/submission-table/{id}/edit', [FormSubmissionTableController::class, 'edit'])->name('submission.edit');
         Route::put('/submission-table/{id}', [FormSubmissionTableController::class, 'update'])->name('submission.update');
         Route::delete('/submission-table/{id}', [FormSubmissionTableController::class, 'destroy'])->name('submission.destroy');
+        // lihat semua submission (lama)
+        Route::get('/admin/submission-table', [FormSubmissionTableController::class, 'index'])->name('admin.submission.table');
+
 });
 
 Route::middleware(['auth','verified'])->group(function () {
