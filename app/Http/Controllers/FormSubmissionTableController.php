@@ -10,24 +10,40 @@ class FormSubmissionTableController extends Controller
 {
     public function index(Request $request)
     {
-        // Ambil daftar form untuk dropdown filter
-        $forms = Form::orderBy('name')->get();
+        // form_id harus ada, kalau tidak redirect ke salah satu form
+        $formId = $request->get('form_id');
 
-        // Query dasar submissions
-        $query = FormSubmission::with('form')->orderBy('_id', 'desc');
-
-        // Jika ada filter form_id dari dropdown, apply
-        if ($request->filled('form_id')) {
-            $query->where('form_id', $request->get('form_id'));
+        if (!$formId) {
+            // default: pakai form pertama
+            $firstForm = Form::orderBy('name')->first();
+            if ($firstForm) {
+                return redirect()->route('admin.submission.table', ['form_id' => $firstForm->_id]);
+            }
+            // kalau tidak ada form sama sekali
+            return view('admin.submission-table.index', [
+                'forms' => collect(),
+                'submissions' => collect(),
+                'columns' => [],
+                'currentForm' => null,
+            ]);
         }
 
-        // Paginate dan bawa query string agar paging tetap membawa filter
+        $forms = Form::orderBy('name')->get();
+        $currentForm = $forms->where('_id', $formId)->first();
+
+        if (!$currentForm) {
+            abort(404, 'Form tidak ditemukan');
+        }
+
+        $query = FormSubmission::with('form')
+            ->where('form_id', $formId)
+            ->orderBy('_id', 'desc');
+
         $submissions = $query->paginate(15)->appends($request->only('form_id'));
 
-        // Ambil kolom dinamis dari kumpulan submissions saat ini
         $columns = $this->extractColumns($submissions);
 
-        return view('admin.submission-table.index', compact('forms', 'submissions', 'columns'));
+        return view('admin.submission-table.index', compact('forms', 'currentForm', 'submissions', 'columns'));
     }
 
     public function edit($id)
@@ -76,7 +92,6 @@ class FormSubmissionTableController extends Controller
         $submission->files = $files;
         $submission->save();
 
-        // redirect kembali ke halaman yang sama, bawa form_id agar tetap pada filter
         return redirect()
             ->route('admin.submission.table', ['form_id' => $submission->form_id])
             ->with('success', 'Submission berhasil diperbarui.');
@@ -87,10 +102,10 @@ class FormSubmissionTableController extends Controller
         $submission = FormSubmission::findOrFail($id);
         $submission->delete();
 
-        return redirect()->route('admin.submission.table')->with('success', 'Data berhasil dihapus.');
+        return redirect()->route('admin.submission.table', ['form_id' => $submission->form_id ?? null])
+            ->with('success', 'Data berhasil dihapus.');
     }
 
-    // optional helper untuk ambil kolom
     private function extractColumns($submissions): array
     {
         $columns = [];
@@ -104,10 +119,6 @@ class FormSubmissionTableController extends Controller
         return $columns;
     }
 
-    /**
-     * Optional helper route: langsung buka index dengan filter form_id.
-     * Kalau kamu butuh route /admin/submission-table/form/{formId} panggil method ini.
-     */
     public function byForm($formId)
     {
         return redirect()->route('admin.submission.table', ['form_id' => $formId]);

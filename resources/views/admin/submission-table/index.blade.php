@@ -18,9 +18,8 @@
                     <form method="GET" action="{{ route('admin.submission.table') }}">
                         <select name="form_id" onchange="this.form.submit()"
                             class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 rounded-md shadow-sm">
-                            <option value="">-- Semua Form --</option>
                             @foreach($forms as $form)
-                                <option value="{{ $form->_id }}" {{ request('form_id') == $form->_id ? 'selected' : '' }}>
+                                <option value="{{ $form->_id }}" {{ $currentForm && $currentForm->_id == $form->_id ? 'selected' : '' }}>
                                     {{ $form->name }}
                                 </option>
                             @endforeach
