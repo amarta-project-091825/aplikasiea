@@ -29,18 +29,33 @@ class ValidasiLaporanController extends Controller
 
     // Update status laporan
     public function update(Request $request, $id)
-    {
-        $request->validate([
-    'status_id' => 'required',
-]);
+{
+    $request->validate([
+        'status_id' => 'required',
+    ]);
 
+    $laporan = LaporanMasyarakat::findOrFail($id);
 
-        $laporan = LaporanMasyarakat::findOrFail($id);
+    // Cek apakah status berubah
+    if ($laporan->status_id != $request->status_id) {
         $laporan->status_id = $request->status_id;
         $laporan->save();
 
-        return redirect()->route('admin.laporan-validasi.index')->with('success', 'Status laporan berhasil diperbarui.');
+        $status = StatusLaporan::find($request->status_id);
+
+        \App\Models\LaporanStatusHistory::create([
+            'laporan_id'   => $laporan->_id,
+            'status_id'    => $status->_id,
+            'status_label' => $status->label,
+            'changed_at'   => now(),
+            'changed_by'   => auth()->id(),
+        ]);
     }
+
+    return redirect()->route('admin.laporan-validasi.index')
+        ->with('success', 'Status laporan berhasil diperbarui.');
+}
+
 
 
         public function destroy($id)

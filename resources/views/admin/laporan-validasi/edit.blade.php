@@ -9,6 +9,15 @@
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 space-y-6">
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Detail Laporan</h3>
+                <h3 class="text-lg font-medium mb-4">Riwayat Status</h3>
+<ul class="divide-y divide-gray-200 dark:divide-gray-700">
+    @foreach($laporan->history as $h)
+        <li class="py-2 text-sm text-gray-700 dark:text-gray-300">
+            <span class="font-semibold">{{ $h->status_label }}</span>
+            <span class="ml-2 text-gray-500">{{ $h->changed_at->format('d M Y H:i') }}</span>
+        </li>
+    @endforeach
+</ul>
 
                 <dl class="divide-y divide-gray-200 dark:divide-gray-700">
                     @foreach($laporan->decoded as $key => $val)

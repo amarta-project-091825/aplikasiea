@@ -18,6 +18,15 @@ class LaporanMasyarakat extends Model
         'status_id',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($laporan) {
+            \App\Models\LaporanStatusHistory::where('laporan_id', $laporan->_id)->delete();
+        });
+    }
+
     protected $casts = [
         'data' => 'array',
     ];
@@ -46,4 +55,10 @@ class LaporanMasyarakat extends Model
     {
         return optional($this->status)->label === 'Ditindaklanjuti';
     }
+    
+    public function history()
+    {
+        return $this->hasMany(LaporanStatusHistory::class, 'laporan_id', '_id')->orderBy('changed_at', 'desc');
+    }
+
 }
