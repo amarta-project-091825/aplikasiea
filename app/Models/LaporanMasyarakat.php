@@ -26,4 +26,24 @@ class LaporanMasyarakat extends Model
     {
        return $this->belongsTo(StatusLaporan::class, 'status_id', '_id');
     }
+
+    public function isDitolak(): bool
+    {
+        return optional($this->status)->label === 'Ditolak';
+    }
+
+    public function isPending(): bool
+    {
+        return optional($this->status)->label === 'Pending';
+    }
+
+    public function isSelesai(): bool
+    {
+        return optional($this->status)->label === 'Selesai';
+    }
+
+    public function isDitindaklanjuti(): bool
+    {
+        return optional($this->status)->label === 'Ditindaklanjuti';
+    }
 }

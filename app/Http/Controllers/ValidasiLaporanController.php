@@ -41,4 +41,17 @@ class ValidasiLaporanController extends Controller
 
         return redirect()->route('admin.laporan-validasi.index')->with('success', 'Status laporan berhasil diperbarui.');
     }
+
+
+        public function destroy($id)
+        {
+            $laporan = LaporanMasyarakat::findOrFail($id);
+            $laporan->delete();
+
+            return redirect()->route('admin.laporan-validasi.index')
+                            ->with('success', 'Laporan berhasil dihapus.');
+        }
+
+
+
 }

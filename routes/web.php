@@ -48,6 +48,8 @@ Route::middleware(['auth','verified'])->group(function () {
     Route::get('/laporan/validasi', [ValidasiLaporanController::class, 'index'])->name('admin.laporan-validasi.index');
     Route::get('/laporan/{id}/validasi', [ValidasiLaporanController::class, 'edit'])->name('admin.laporan-validasi.edit');
     Route::put('/laporan/{id}/validasi', [ValidasiLaporanController::class, 'update'])->name('admin.laporan-validasi.update');
+    Route::delete('/admin/laporan-validasi/{id}', [ValidasiLaporanController::class, 'destroy'])
+    ->name('admin.laporan-validasi.destroy');
 
 });
 
