@@ -38,6 +38,14 @@
                         <x-nav-link :href="route('form-submissions.index')" :active="request()->routeIs('form-submissions.*')">
                             {{ __('Submissions') }}
                         </x-nav-link>
+
+                        <x-nav-link :href="route('laporan.create')" :active="request()->routeIs('laporan.*')">
+                            {{ __('Laporan') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('admin.laporan-validasi.index')" :active="request()->routeIs('admin.laporan-validasi.*')">
+                            {{ __('Validasi') }}
+                        </x-nav-link>
                 </div>
             </div>
 

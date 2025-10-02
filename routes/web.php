@@ -6,6 +6,8 @@ use App\Http\Controllers\FormSubmissionTableController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\LaporanMasyarakatController;
+use App\Http\Controllers\ValidasiLaporanController;
 
 Route::get('/', function () {
    return redirect()->route('login');
@@ -33,7 +35,6 @@ Route::middleware(['auth','verified','role:admin','role:1'])
         Route::get('/submission-table/{id}/edit', [FormSubmissionTableController::class, 'edit'])->name('submission.edit');
         Route::put('/submission-table/{id}', [FormSubmissionTableController::class, 'update'])->name('submission.update');
         Route::delete('/submission-table/{id}', [FormSubmissionTableController::class, 'destroy'])->name('submission.destroy');
-        // lihat semua submission (lama)
         Route::get('/admin/submission-table', [FormSubmissionTableController::class, 'index'])->name('admin.submission.table');
 
 });
@@ -44,7 +45,14 @@ Route::middleware(['auth','verified'])->group(function () {
     Route::post('/forms/{slug}', [DynamicFormController::class, 'submit'])->name('forms.submit');
     Route::get('/form-submissions', [FormSubmissionPublicController::class, 'index'])->name('form-submissions.index');
     Route::get('/form-submissions/{submission}', [FormSubmissionPublicController::class, 'show'])->name('form-submissions.show');
+    Route::get('/laporan/validasi', [ValidasiLaporanController::class, 'index'])->name('admin.laporan-validasi.index');
+    Route::get('/laporan/{id}/validasi', [ValidasiLaporanController::class, 'edit'])->name('admin.laporan-validasi.edit');
+    Route::put('/laporan/{id}/validasi', [ValidasiLaporanController::class, 'update'])->name('admin.laporan-validasi.update');
+
 });
+
+Route::get('/laporan', [LaporanMasyarakatController::class, 'create'])->name('laporan.create'); // tampilkan form publik
+Route::post('/laporan', [LaporanMasyarakatController::class, 'store'])->name('laporan.store'); // submit form
 
 
 require __DIR__.'/auth.php';
