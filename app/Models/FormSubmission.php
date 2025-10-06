@@ -20,6 +20,16 @@ class FormSubmission extends Model
         'files' => 'array',
     ];
 
+    public function getDataAttribute($value)
+    {
+        return is_string($value) ? json_decode($value, true) : $value;
+    }
+
+    public function getFilesAttribute($value)
+    {
+        return is_string($value) ? json_decode($value, true) : $value;
+    }
+
     public function form()
     {
         return $this->belongsTo(Form::class, 'form_id', '_id');

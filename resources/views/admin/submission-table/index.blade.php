@@ -27,7 +27,7 @@
                     </form>
                 </div>
             </div>
-
+        
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
                 <div class="p-0 overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -45,44 +45,54 @@
                             @forelse($submissions as $s)
                                 <tr>
                                     @foreach($columns as $col)
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                        @php
-                                            $file = $s->files[$col] ?? null;
-                                            $val  = $s->data[$col] ?? '-';
-                                        @endphp
+                                   @php
+                                    $val = $s->decoded_data[$col] 
+                                        ?? ($s->data[$col] ?? '-');
 
-                                        {{-- Jika kolom ini adalah file --}}
-                                        @if($file)
-                                            {{-- Multiple files --}}
-                                            @if(isset($file[0]) && is_array($file[0]))
-                                                @foreach($file as $f)
-                                                    @if(Str::startsWith($f['mime'], 'image/'))
-                                                        <img src="{{ $f['data'] }}" 
-                                                            alt="{{ $f['name'] }}" 
-                                                            class="h-16 w-auto rounded shadow mb-1">
-                                                    @else
-                                                        <a href="{{ $f['data'] }}" 
-                                                        download="{{ $f['name'] }}" 
-                                                        class="text-indigo-600 underline block">
-                                                            {{ $f['name'] }}
-                                                        </a>
-                                                    @endif
-                                                @endforeach
-                                            {{-- Single file --}}
+                                    $file = $s->files[$col] ?? null;
+                                @endphp
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                @php
+                                    $val = $s->decoded_data[$col] ?? ($s->data[$col] ?? '-');
+                                    $file = $s->files[$col] ?? null;
+                                @endphp
+
+                                @if(is_array($val) && isset($val['mime']) && Str::startsWith($val['mime'], 'image/'))
+                                    <img src="{{ $val['data'] }}"
+                                        alt="{{ $val['name'] ?? 'File' }}"
+                                        class="h-16 w-auto rounded shadow">
+
+                                @elseif(is_string($val) && Str::contains($val, 'data:image'))
+                                    <img src="{{ $val }}" class="h-16 w-auto rounded shadow">
+
+                                @elseif(is_array($file) && isset($file['mime']))
+                                    @if(Str::startsWith($file['mime'], 'image/'))
+                                        <img src="{{ $file['data'] }}"
+                                            alt="{{ $file['name'] ?? 'File' }}"
+                                            class="h-16 w-auto rounded shadow">
+                                    @else
+                                        <a href="{{ $file['data'] }}"
+                                        download="{{ $file['name'] ?? 'file' }}"
+                                        class="text-indigo-600 underline">
+                                            {{ $file['name'] ?? 'Download File' }}
+                                        </a>
+                                    @endif
+
+                                    @elseif(is_array($file) && isset($file[0]) && isset($file[0]['mime']))
+                                        @foreach($file as $f)
+                                            @if(Str::startsWith($f['mime'], 'image/'))
+                                                <img src="{{ $f['data'] }}"
+                                                    alt="{{ $f['name'] ?? 'File' }}"
+                                                    class="h-16 w-auto rounded shadow mb-1">
                                             @else
-                                                @if(Str::startsWith($file['mime'], 'image/'))
-                                                    <img src="{{ $file['data'] }}" 
-                                                        alt="{{ $file['name'] }}" 
-                                                        class="h-16 w-auto rounded shadow">
-                                                @else
-                                                    <a href="{{ $file['data'] }}" 
-                                                    download="{{ $file['name'] }}" 
-                                                    class="text-indigo-600 underline">
-                                                        {{ $file['name'] }}
-                                                    </a>
-                                                @endif
+                                                <a href="{{ $f['data'] }}"
+                                                download="{{ $f['name'] ?? 'file' }}"
+                                                class="text-indigo-600 underline block">
+                                                    {{ $f['name'] ?? 'Download File' }}
+                                                </a>
                                             @endif
-                                        {{-- Jika bukan file --}}
+                                        @endforeach
+
                                         @else
                                             @if(is_array($val))
                                                 {{ implode(', ', $val) }}
@@ -115,7 +125,7 @@
                         </tbody>
                     </table>
                 </div>
-                {{-- Pagination --}}
+                
                 <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
                     {{ $submissions->links() }}
                 </div>

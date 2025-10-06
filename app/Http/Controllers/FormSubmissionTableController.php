@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Form;
 use App\Models\FormSubmission;
 use Illuminate\Http\Request;
+use App\Models\LaporanSelesai;
 
 class FormSubmissionTableController extends Controller
 {
     public function index(Request $request)
     {
-        // form_id harus ada, kalau tidak redirect ke salah satu form
+        
         $formId = $request->get('form_id');
 
         if (!$formId) {
@@ -25,7 +26,7 @@ class FormSubmissionTableController extends Controller
                 'submissions' => collect(),
                 'columns' => [],
                 'currentForm' => null,
-            ]);
+            ]); 
         }
 
         $forms = Form::orderBy('name')->get();
@@ -35,13 +36,28 @@ class FormSubmissionTableController extends Controller
             abort(404, 'Form tidak ditemukan');
         }
 
-        $query = FormSubmission::with('form')
-            ->where('form_id', $formId)
-            ->orderBy('_id', 'desc');
+         $formLaporanId = '68ddd553e341db5b990dcb92'; // ganti kalau beda
+
+        if ($formId == $formLaporanId) {
+            // Ambil dari collection laporan_selesai
+            $query = LaporanSelesai::where('form_id', $formId)
+                ->orderBy('_id', 'desc');
+        } else {
+            // Ambil dari form_submissions seperti biasa
+            $query = FormSubmission::with('form')
+                ->where('form_id', $formId)
+                ->orderBy('_id', 'desc');
+        }
 
         $submissions = $query->paginate(15)->appends($request->only('form_id'));
 
         $columns = $this->extractColumns($submissions);
+
+        foreach ($submissions as $submission) {
+            $submission->decoded_data = is_string($submission->data)
+                ? json_decode($submission->data, true)
+                : $submission->data;
+        }
 
         return view('admin.submission-table.index', compact('forms', 'currentForm', 'submissions', 'columns'));
     }
