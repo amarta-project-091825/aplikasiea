@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'fonnte' => [
+    'token' => env('FONNTE_TOKEN'),
+    'device' => env('FONNTE_DEVICE'), // bisa optional, tergantung Fonnte
+    'country_code' => env('FONNTE_COUNTRY_CODE', '62'),
+],
+
+
 ];

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\LaporanMasyarakatController;
 use App\Http\Controllers\ValidasiLaporanController;
+use App\Services\SmsService;
 
 Route::get('/', function () {
    return redirect()->route('login');
@@ -55,6 +56,21 @@ Route::middleware(['auth','verified'])->group(function () {
 
 Route::get('/laporan', [LaporanMasyarakatController::class, 'create'])->name('laporan.create'); // tampilkan form publik
 Route::post('/laporan', [LaporanMasyarakatController::class, 'store'])->name('laporan.store'); // submit form
+Route::post('/laporan/send-otp', [LaporanMasyarakatController::class, 'sendOtp'])->name('laporan.sendOtp');
+Route::get('/laporan/verify', [LaporanMasyarakatController::class, 'showVerifyForm'])->name('laporan.verifyForm');
+Route::post('/laporan/verify', [LaporanMasyarakatController::class, 'verifyOtp'])->name('laporan.verifyOtp');
+Route::post('/laporan/resend-otp', [LaporanMasyarakatController::class, 'resendOtp'])->name('laporan.resendOtp');
 
+Route::get('/laporan/send-otp-test', function () {
+    $otp = rand(100000, 999999);
+    $otpKey = uniqid();
+
+    \Illuminate\Support\Facades\Cache::put("otp_{$otpKey}", $otp, now()->addMinutes(5));
+    session(['otp_key' => $otpKey]);
+
+    return "OTP Anda adalah: <b>{$otp}</b><br>
+            <a href='/laporan/verify'>Ke halaman verifikasi</a>";
+});
+    
 
 require __DIR__.'/auth.php';

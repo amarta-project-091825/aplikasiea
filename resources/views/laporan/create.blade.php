@@ -12,9 +12,19 @@
             </div>
         @endif
 
+        @if($errors->any())
+            <div class="mb-6 px-4 py-3 rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200 text-sm">
+                <ul class="list-disc pl-5">
+                    @foreach($errors->all() as $err)
+                        <li>{{ $err }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
             <div class="p-6">
-                <form method="POST" action="{{ route('laporan.store') }}" enctype="multipart/form-data" class="space-y-5">
+                <form method="POST" action="{{ route('laporan.sendOtp') }}" enctype="multipart/form-data" class="space-y-5">
                     @csrf
 
                     @foreach($fields as $field)
@@ -26,6 +36,7 @@
                             @if($field['type'] === 'text' || $field['type'] === 'number')
                                 <input type="{{ $field['type'] }}" 
                                        name="{{ $field['name'] }}" 
+                                       value="{{ old($field['name']) }}"
                                        class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                                        {{ $field['required'] ? 'required' : '' }}>
 
@@ -33,13 +44,13 @@
                                 <textarea name="{{ $field['name'] }}" 
                                           rows="4"
                                           class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                          {{ $field['required'] ? 'required' : '' }}></textarea>
+                                          {{ $field['required'] ? 'required' : '' }}>{{ old($field['name']) }}</textarea>
 
                             @elseif($field['type'] === 'select')
                                 <select name="{{ $field['name'] }}" 
                                         class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                                     @foreach($field['options'] as $opt)
-                                        <option value="{{ $opt }}">{{ $opt }}</option>
+                                        <option value="{{ $opt }}" {{ old($field['name']) == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                                     @endforeach
                                 </select>
 
@@ -50,6 +61,7 @@
                                             <input type="radio" 
                                                    name="{{ $field['name'] }}" 
                                                    value="{{ $opt }}" 
+                                                   {{ old($field['name']) == $opt ? 'checked' : '' }}
                                                    class="text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
                                                    {{ $field['required'] ? 'required' : '' }}>
                                             <span class="ml-2">{{ $opt }}</span>
@@ -75,7 +87,7 @@
                     <div>
                         <button type="submit" 
                                 class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            Kirim
+                            Kirim OTP
                         </button>
                     </div>
                 </form>
