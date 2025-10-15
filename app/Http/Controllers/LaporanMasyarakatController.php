@@ -160,10 +160,31 @@ class LaporanMasyarakatController extends Controller
 
     $trackingCode = $laporan->tracking_code;
     $laporanId = $laporan->_id;
-    SmsService::send(
-        $entry['phone'],
-        "✅ Laporan Anda telah diverifikasi!\nKode pelacakan: {$trackingCode}"
-    );
+    
+    $laporanData = $entry['laporan_data'] ?? [];
+if (is_string($laporanData)) {
+    $laporanData = json_decode($laporanData, true) ?? [];
+}
+
+$namaPelapor = $laporanData['nama_pelapor']
+    ?? $laporanData['nama']
+    ?? $laporanData['name']
+    ?? 'Pelapor';
+
+$isiLaporan  = $laporanData['deskripsi_laporan']
+    ?? $laporanData['laporan']
+    ?? $laporanData['deskripsi']
+    ?? '(detail laporan tidak tersedia)';
+
+    // Kirim WhatsApp lengkap
+    $message = "✅ Terima kasih, *{$namaPelapor}*!\n".
+            "Laporan Anda telah berhasil diverifikasi dan tercatat dalam sistem.\n\n".
+            "📄 *Detail laporan singkat:*\n{$isiLaporan}\n\n".
+            "🔍 *Kode Pelacakan:* {$trackingCode}\n".
+            "Gunakan kode ini untuk memantau status laporan Anda.";
+
+    SmsService::send($entry['phone'], $message);
+
     // Hapus cache setelah ambil data
     Cache::forget($cacheKey);
 

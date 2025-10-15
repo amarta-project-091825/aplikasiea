@@ -16,6 +16,8 @@ class LaporanMasyarakat extends Model
         'form_id',
         'data',
         'status_id',
+        'verified_at',      // ✅ WAJIB TAMBAH
+        'tracking_code', 
     ];
 
     protected static function boot()
