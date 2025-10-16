@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\LaporanMasyarakatController;
 use App\Http\Controllers\ValidasiLaporanController;
 use App\Services\SmsService;
+use App\Http\Controllers\PetaController;
 
 Route::get('/', function () {
    return redirect()->route('login');
@@ -71,6 +72,9 @@ Route::get('/laporan/send-otp-test', function () {
     return "OTP Anda adalah: <b>{$otp}</b><br>
             <a href='/laporan/verify'>Ke halaman verifikasi</a>";
 });
+
+Route::get('/peta', [PetaController::class, 'index'])->name('peta.index');
+
     
 
 require __DIR__.'/auth.php';

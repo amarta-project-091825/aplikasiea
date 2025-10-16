@@ -30,6 +30,10 @@
                             {{ __('Submission Table') }}
                         </x-nav-link>
                     @endif
+
+                        <x-nav-link :href="route('peta.index')" :active="request()->routeIs('peta.*')">
+                            {{ __('Peta') }}
+                        </x-nav-link>
                       {{-- Daftar Form untuk semua user --}}
                         <x-nav-link :href="route('forms.list')" :active="request()->routeIs('forms.list') || request()->routeIs('forms.show')">
                             {{ __('Form') }}
