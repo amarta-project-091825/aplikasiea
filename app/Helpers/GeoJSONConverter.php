@@ -7,10 +7,8 @@ class GeoJSONConverter
     // Konversi satu record Jalan
     public static function convertJalan($record)
     {
-        // Ambil field data
         $dataField = $record['data'] ?? null;
 
-        // Pastikan $data selalu array
         if (is_string($dataField)) {
             $data = json_decode($dataField, true);
         } elseif (is_array($dataField)) {
@@ -19,7 +17,6 @@ class GeoJSONConverter
             $data = [];
         }
 
-        // Cek koordinat wajib
         if (
             empty($data['latitude_awal']) ||
             empty($data['longitude_awal']) ||
@@ -65,7 +62,6 @@ class GeoJSONConverter
     {
         $dataField = $record['data'] ?? null;
 
-        // Pastikan $data selalu array
         if (is_string($dataField)) {
             $data = json_decode($dataField, true);
         } elseif (is_array($dataField)) {
@@ -76,7 +72,7 @@ class GeoJSONConverter
 
         if (
             empty($data['latitude_jembatan']) ||
-            empty($data['longtitude_jembatan'])
+            empty($data['longitude_jembatan'])
         ) {
             return null;
         }
@@ -86,13 +82,13 @@ class GeoJSONConverter
             'geometry' => [
                 'type' => 'Point',
                 'coordinates' => [
-                    floatval($data['longtitude_jembatan']),
+                    floatval($data['longitude_jembatan']),
                     floatval($data['latitude_jembatan'])
                 ]
             ],
             'properties' => [
                 'nama' => $data['nama_jembatan'] ?? null,
-                'kecamatan' => $data['kecamatan_jermbatan'] ?? null,
+                'kecamatan' => $data['kecamatan_jembatan'] ?? null,
                 'desa' => $data['desa_jembatan'] ?? null,
                 'kondisi' => $data['kondisi_jembatan'] ?? null,
                 'tahun_pembangunan' => $data['tahun_pembangunan_jembatan'] ?? null,

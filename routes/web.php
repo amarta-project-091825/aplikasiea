@@ -10,6 +10,8 @@ use App\Http\Controllers\LaporanMasyarakatController;
 use App\Http\Controllers\ValidasiLaporanController;
 use App\Services\SmsService;
 use App\Http\Controllers\PetaController;
+use App\Http\Controllers\GeoJSONController;
+
 
 Route::get('/', function () {
    return redirect()->route('login');
@@ -74,6 +76,8 @@ Route::get('/laporan/send-otp-test', function () {
 });
 
 Route::get('/peta', [PetaController::class, 'index'])->name('peta.index');
+Route::get('/admin/import-geojson', [GeoJSONController::class, 'showImportForm'])->name('import.form');
+Route::post('/admin/import-geojson', [GeoJSONController::class, 'importGeoJSON'])->name('import.process');
 
     
 
