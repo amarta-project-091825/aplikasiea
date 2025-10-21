@@ -56,6 +56,7 @@ class ValidasiLaporanController extends Controller
             \App\Models\LaporanSelesai::create([
                 'form_id' => $laporan->form_id,
                 'data' => $laporan->data,
+                'tracking_code' => $laporan->tracking_code,
                 'status_history' => $history->map(function($h) {
                     return [
                         'status_id' => $h->status_id,

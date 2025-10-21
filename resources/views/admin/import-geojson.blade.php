@@ -9,7 +9,7 @@
         <select id="formSelect" class="p-2 border rounded">
             <option value="{{ $formIdJalan }}">Jalan</option>
             <option value="{{ $formIdJembatan }}">Jembatan</option>
-        </select>
+            </select>
         <button id="previewBtn" class="px-3 py-2 bg-sky-600 text-white rounded">Preview</button>
         <button id="submitImport" class="px-3 py-2 bg-emerald-600 text-white rounded">Import ke DB</button>
     </div>
