@@ -13,6 +13,7 @@ class LaporanSelesai extends Model
      protected $fillable = [
         'form_id',
         'data',
+        'tracking_code',
         'status_history',
         'created_at',
         'updated_at',
