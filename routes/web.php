@@ -54,6 +54,8 @@ Route::middleware(['auth','verified'])->group(function () {
     Route::put('/laporan/{id}/validasi', [ValidasiLaporanController::class, 'update'])->name('admin.laporan-validasi.update');
     Route::delete('/admin/laporan-validasi/{id}', [ValidasiLaporanController::class, 'destroy'])
     ->name('admin.laporan-validasi.destroy');
+    Route::delete('/admin/submission/batch', [FormSubmissionTableController::class, 'batchDestroy'])
+    ->name('admin.submission.batchDestroy');
 
 });
 

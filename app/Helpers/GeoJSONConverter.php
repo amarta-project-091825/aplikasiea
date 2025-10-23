@@ -2,20 +2,17 @@
 
 namespace App\Helpers;
 
+use App\Models\Form; // pastiin model Form kamu bener
+
 class GeoJSONConverter
 {
     /**
      * Convert a generic FormSubmission record to a GeoJSON Feature.
-     * This is flexible: it will use geometry if present; otherwise try to
-     * infer from data fields (legacy support).
-     *
-     * @param \Illuminate\Database\Eloquent\Model|array $record
-     * @return array|null
      */
     public static function convertRecord($record)
     {
-        // allow both array or Eloquent model
         $dataField = null;
+
         if (is_array($record)) {
             $dataField = $record['data'] ?? null;
             $geometryField = $record['geometry'] ?? null;
@@ -37,18 +34,17 @@ class GeoJSONConverter
             $data = [];
         }
 
-        // if geometry exists and is valid, use it
+        // geometry: pakai yang disimpan atau infer dari data lama
         if (is_array($geometryField) && !empty($geometryField['type']) && !empty($geometryField['coordinates'])) {
             $geom = $geometryField;
         } else {
-            // try infer geometry from data fields (legacy)
             $geom = self::inferGeometryFromData($data);
         }
 
         if (!$geom) return null;
 
-        // Build properties: unify keys for UI consumption
-        $props = self::buildPropertiesFromData($data, $formId);
+        // bangun atribut dinamis dari form definition
+        $props = self::buildPropertiesFromForm($data, $formId);
         $props['id'] = (string) ($id ?? ($data['id'] ?? null));
 
         return [
@@ -59,57 +55,52 @@ class GeoJSONConverter
     }
 
     /**
-     * Build a properties array normalized for front-end.
+     * Build property fields dynamically from the form structure in DB.
      */
-    protected static function buildPropertiesFromData(array $data, $formId = null)
+    protected static function buildPropertiesFromForm(array $data, $formId = null)
     {
-        // Prefer known road/jembatan keys but fall back to generic keys
         $props = [];
 
-        // Try flexible mappings (common variants)
-        $mapCandidates = [
-            'nama' => ['nama_jalan','nama','road_name','name','nama_jembatan'],
-            'kecamatan' => ['kecamatan_jalan','kecamatan','district','kecamatan_jembatan'],
-            'desa' => ['desa_jalan','desa','village','desa_jembatan'],
-            'status' => ['status_jalan','status'],
-            'kondisi' => ['kondisi_jalan','kondisi'],
-            'tipe' => ['tipe_jalan','tipe','type'],
-            'tahun_pembangunan' => ['tahun_pembangunan','year'],
-            'lebar' => ['lebar_jalan','lebar'],
-            'panjang' => ['panjang_jalan','panjang','length'],
-            'keterangan' => ['keterangan_jalan','keterangan','desc','description'],
-        ];
+        // kalau form_id valid, ambil definisinya biar tau field apa aja
+        $form = $formId ? Form::find($formId) : null;
+        $formFields = [];
 
-        foreach ($mapCandidates as $key => $variants) {
-            foreach ($variants as $v) {
-                if (array_key_exists($v, $data) && $data[$v] !== null && $data[$v] !== '') {
-                    $props[$key] = $data[$v];
-                    break;
+        if ($form && isset($form->template['fields'])) {
+            // asumsikan struktur form->template['fields'] berisi daftar field
+            foreach ($form->template['fields'] as $f) {
+                if (isset($f['name'])) {
+                    $formFields[] = $f['name'];
                 }
-            }
-            if (!array_key_exists($key, $props)) {
-                $props[$key] = null;
             }
         }
 
-        // Also copy all raw data fields as fallback so UI can inspect them
+        // kalau gak ada template, fallback ke semua key data
+        if (empty($formFields)) {
+            $formFields = array_keys($data);
+        }
+
+        // isi semua field yang sesuai template
+        foreach ($formFields as $key) {
+            $props[$key] = $data[$key] ?? null;
+        }
+
+        // simpan full data mentah buat debugging atau viewer
         $props['_raw'] = $data;
 
         return $props;
     }
 
     /**
-     * Infer geometry from data fields if explicit geometry missing.
-     * Returns GeoJSON geometry array or null.
+     * Infer geometry dari data lama (legacy support).
      */
     protected static function inferGeometryFromData(array $data)
     {
-        // If lat/lng pair for jembatan exist
+        // jembatan
         if ((isset($data['latitude_jembatan']) || isset($data['lat'])) &&
-            (isset($data['longitude_jembatan']) || isset($data['lng']) || isset($data['longtitude_jembatan']) || isset($data['longitude']))) {
+            (isset($data['longitude_jembatan']) || isset($data['lng']) || isset($data['longitude']))) {
 
             $lat = $data['latitude_jembatan'] ?? $data['lat'] ?? null;
-            $lng = $data['longitude_jembatan'] ?? $data['lng'] ?? $data['longitude'] ?? $data['longtitude_jembatan'] ?? null;
+            $lng = $data['longitude_jembatan'] ?? $data['lng'] ?? $data['longitude'] ?? null;
 
             if (is_numeric($lat) && is_numeric($lng)) {
                 return [
@@ -119,7 +110,7 @@ class GeoJSONConverter
             }
         }
 
-        // If route start/end coordinates exist for jalan
+        // jalan (awal-akhir)
         if ((isset($data['latitude_awal']) || isset($data['lat_start'])) &&
             (isset($data['longitude_awal']) || isset($data['lng_start'])) &&
             (isset($data['latitude_akhir']) || isset($data['lat_end'])) &&

@@ -9,7 +9,7 @@
         <select id="formSelect" class="p-2 border rounded">
             <option value="{{ $formIdJalan }}">Jalan</option>
             <option value="{{ $formIdJembatan }}">Jembatan</option>
-            </select>
+        </select>
         <button id="previewBtn" class="px-3 py-2 bg-sky-600 text-white rounded">Preview</button>
         <button id="submitImport" class="px-3 py-2 bg-emerald-600 text-white rounded">Import ke DB</button>
     </div>
@@ -31,27 +31,37 @@
 <script>
 (() => {
     let rawData = null;
-    let features = []; // unique features used for mapping (wakil)
-    let allFeatures = []; // full geojson features for map
+    let allFeatures = [];
     let previewFeature = null;
 
     const map = L.map('map').setView([-8.0983, 112.1688], 12);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 19
+        attribution: '&copy; OpenStreetMap & CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
     }).addTo(map);
-
-    const geoLayerGroup = L.layerGroup().addTo(map);
+    const geoLayerGroup = L.featureGroup().addTo(map);
 
     const fileInput = document.getElementById('geojsonFile');
     const previewBtn = document.getElementById('previewBtn');
-    const mappingContainer = document.getElementById('mappingContainer');
     const submitBtn = document.getElementById('submitImport');
+    const mappingContainer = document.getElementById('mappingContainer');
     const formSelect = document.getElementById('formSelect');
+
+    async function getFormFields(formId) {
+        try {
+            const res = await fetch(`/api/forms/${formId}/fields`);
+            if (!res.ok) return [];
+            return await res.json();
+        } catch (e) {
+            console.error('Gagal ambil field form:', e);
+            return [];
+        }
+    }
 
     function clearPreview() {
         geoLayerGroup.clearLayers();
         mappingContainer.innerHTML = '';
-        features = [];
         allFeatures = [];
         previewFeature = null;
     }
@@ -65,39 +75,17 @@
             try {
                 rawData = JSON.parse(e.target.result);
                 if (!rawData.features || !Array.isArray(rawData.features)) {
-                    alert('File GeoJSON tidak valid (features tidak ditemukan).');
+                    alert('File GeoJSON tidak valid.');
                     rawData = null;
                     return;
                 }
                 allFeatures = rawData.features;
-                // build unique representative features
-                const seen = new Set();
-                const unique = [];
-                allFeatures.forEach(f => {
-                    let key;
-                    if (f.geometry && f.geometry.type === 'LineString') {
-                        const start = f.geometry.coordinates[0] || [];
-                        const end = f.geometry.coordinates[f.geometry.coordinates.length - 1] || [];
-                        key = f.properties?.id ?? (start.join(',') + '|' + end.join(','));
-                    } else if (f.geometry && f.geometry.type === 'Point') {
-                        key = f.properties?.id ?? (f.geometry.coordinates.join(','));
-                    } else {
-                        key = JSON.stringify(f.properties ?? {}) + '|' + (f.geometry?.type ?? 'unknown');
-                    }
-                    if (!seen.has(key)) {
-                        seen.add(key);
-                        unique.push(f);
-                    }
-                });
-                features = unique;
-                previewFeature = features[0] || null;
-
+                previewFeature = allFeatures[0] || null;
                 renderMap(allFeatures);
                 renderMappingPanel();
             } catch (err) {
                 console.error(err);
-                alert('Gagal membaca file (JSON invalid).');
-                rawData = null;
+                alert('File JSON tidak valid.');
             }
         };
         reader.readAsText(file);
@@ -105,7 +93,7 @@
 
     previewBtn.addEventListener('click', () => {
         if (!rawData) {
-            alert('Pilih file GeoJSON terlebih dahulu.');
+            alert('Pilih file GeoJSON dulu.');
             return;
         }
         renderMap(allFeatures);
@@ -114,175 +102,135 @@
 
     function renderMap(geojson) {
         geoLayerGroup.clearLayers();
-        const layer = L.geoJSON(geojson, {
-            style: (feature) => {
-                if (feature.geometry && feature.geometry.type === 'LineString') {
-                    return { color: '#0074D9', weight: 3, opacity: 0.8 };
-                }
-                if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
+        L.geoJSON(geojson, {
+            style: f => {
+                if (f.geometry?.type === 'LineString') return { color: '#0074D9', weight: 3 };
+                if (['Polygon','MultiPolygon'].includes(f.geometry?.type))
                     return { color: '#2ECC40', weight: 2, fillOpacity: 0.2 };
-                }
                 return {};
             },
-            pointToLayer: (feature, latlng) => {
-                return L.circleMarker(latlng, { radius: 6, fillColor: '#FF4136', color: '#900', fillOpacity: 0.9 });
-            },
-            onEachFeature: (feature, layer) => {
-                const p = feature.properties || {};
+            pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+                radius: 5, fillColor: '#FF4136', color: '#900', fillOpacity: 0.9
+            }),
+            onEachFeature: (f, layer) => {
+                const p = f.properties || {};
                 let popup = `<strong>${p.nama ?? p.name ?? 'Tanpa Nama'}</strong><br>`;
-                Object.keys(p).forEach(k => {
-                    if (k === '_raw') return;
-                    popup += `<small>${k}: ${p[k]}</small><br>`;
-                });
+                Object.keys(p).forEach(k => popup += `<small>${k}: ${p[k]}</small><br>`);
                 layer.bindPopup(popup);
             }
         }).addTo(geoLayerGroup);
-        if (geoLayerGroup.getBounds && !geoLayerGroup.getBounds().isEmpty()) {
-            map.fitBounds(geoLayerGroup.getBounds(), { maxZoom: 16 });
-        }
+
+        try {
+            const bounds = geoLayerGroup.getBounds();
+            if (bounds.isValid()) map.fitBounds(bounds, { maxZoom: 16 });
+        } catch { /* biarin */ }
     }
 
-    function renderMappingPanel() {
+    async function renderMappingPanel() {
         mappingContainer.innerHTML = '';
         if (!previewFeature) {
             mappingContainer.innerHTML = '<p>Tidak ada fitur untuk direview.</p>';
             return;
         }
 
+        const formFields = await getFormFields(formSelect.value);
         const props = previewFeature.properties || {};
+        const allKeys = new Set();
+        allFeatures.forEach(f => Object.keys(f.properties || {}).forEach(k => allKeys.add(k)));
+
         const header = document.createElement('div');
-        header.innerHTML = `<div class="font-semibold mb-2">Preview atribut dari 1 fitur (wakil)</div>
-                            <div class="text-xs text-gray-600 mb-3">Edit nilai, pilih mapping tujuan, atau hapus atribut</div>`;
+        header.innerHTML = `
+            <div class="font-semibold mb-2">Preview atribut dari 1 fitur</div>
+            <div class="text-xs text-gray-600 mb-3">Mapping otomatis ke field form dari DB</div>`;
         mappingContainer.appendChild(header);
 
-        // Collect all existing property keys across all features for convenience
-        const allKeys = new Set();
-        allFeatures.forEach(f => {
-            const p = f.properties || {};
-            Object.keys(p).forEach(k => allKeys.add(k));
-        });
-
-        // For each key show row
         Array.from(allKeys).forEach(key => {
-            const sampleVal = previewFeature.properties?.[key] ?? '';
+            const sampleVal = props[key] ?? '';
             const row = document.createElement('div');
-            row.className = 'mb-2';
+            row.className = 'mb-3 p-2 border rounded bg-gray-50';
+            row.dataset.prop = key;
 
-            const label = document.createElement('div');
-            label.className = 'text-sm font-medium';
-            label.innerText = key;
-            row.appendChild(label);
+            row.innerHTML = `
+                <div class="text-sm font-medium mb-1">${key}</div>
+                <input type="text" value="${sampleVal}" class="w-full border p-1 mb-1">
+                <select class="w-full border p-1 mb-2">
+                    <option value="">- tidak pakai -</option>
+                    ${formFields.map(f => `<option value="${f}">${f}</option>`).join('')}
+                </select>
+                <button class="hapus-btn px-2 py-1 bg-red-600 text-white rounded">Hapus</button>
+            `;
 
-            const valInput = document.createElement('input');
-            valInput.type = 'text';
-            valInput.value = sampleVal;
-            valInput.className = 'w-full border p-1 mb-1';
-            row.appendChild(valInput);
-
-            const sel = document.createElement('select');
-            sel.className = 'w-full border p-1';
-            const options = ['', 'nama_jalan','kecamatan_jalan','desa_jalan','status_jalan','kondisi_jalan','tipe_jalan','tahun_pembangunan','lebar_jalan','panjang_jalan','keterangan_jalan','id','nama'];
-            options.forEach(o => { const opt = document.createElement('option'); opt.value = o; opt.text = o || '- tidak pakai -'; sel.appendChild(opt); });
-
-            row.appendChild(sel);
-
-            const controls = document.createElement('div');
-            controls.className = 'mt-1 flex gap-2';
-
-            const applyBtn = document.createElement('button');
-            applyBtn.innerText = 'Apply to all';
-            applyBtn.className = 'px-2 py-1 bg-blue-600 text-white rounded';
-            applyBtn.addEventListener('click', () => {
-                // apply mapping/value to all features' mappedProperties
+            // tombol hapus
+            row.querySelector('.hapus-btn').addEventListener('click', () => {
                 allFeatures.forEach(f => {
-                    f.mappedProperties = f.mappedProperties || {};
-                    const mappedKey = sel.value || key;
-                    if (valInput.value === '') {
-                        delete f.mappedProperties[mappedKey];
-                    } else {
-                        f.mappedProperties[mappedKey] = valInput.value;
-                    }
-                });
-                alert('Mapping diterapkan ke semua fitur.');
-            });
-            controls.appendChild(applyBtn);
-
-            const delBtn = document.createElement('button');
-            delBtn.innerText = 'Delete attribute';
-            delBtn.className = 'px-2 py-1 bg-red-600 text-white rounded';
-            delBtn.addEventListener('click', () => {
-                // remove attribute from preview UI and from mappedProperties of each feature
-                allFeatures.forEach(f => {
-                    if (f.mappedProperties) {
-                        // remove any mapped entries that used this key
-                        Object.keys(f.mappedProperties).forEach(mpKey => {
-                            // if mapping used original property name as key, remove it
-                            if (mpKey === key) delete f.mappedProperties[mpKey];
-                        });
-                    }
-                    // also remove raw property so preview no longer shows it
-                    if (f.properties && f.properties.hasOwnProperty(key)) {
-                        delete f.properties[key];
-                    }
+                    delete f.properties[key];
+                    if (f.mappedProperties) delete f.mappedProperties[key];
                 });
                 row.remove();
             });
-            controls.appendChild(delBtn);
 
-            row.appendChild(controls);
             mappingContainer.appendChild(row);
         });
     }
 
+    function applyMapping() {
+        allFeatures.forEach(f => {
+            f.mappedProperties = {};
+            document.querySelectorAll('#mappingContainer > div[data-prop]').forEach(row => {
+                const key = row.dataset.prop;
+                const dropdown = row.querySelector('select');
+                const input = row.querySelector('input');
+                const mappedKey = dropdown.value;
+                const value = input.value;
+                if (mappedKey) f.mappedProperties[mappedKey] = value;
+            });
+        });
+    }
+
     submitBtn.addEventListener('click', () => {
-        if (!allFeatures || allFeatures.length === 0) {
+        if (!allFeatures.length) {
             alert('Tidak ada fitur untuk diimport.');
             return;
         }
 
-        const chosenForm = formSelect.value;
-        // prepare payload: for each unique feature, generate mappedProperties
-        const payloadFeatures = allFeatures.map(f => {
-            // if user didn't set mappedProperties, try to use properties as-is
-            const mp = f.mappedProperties || {};
-            // fallback: copy original properties keys into mappedProperties with same key names
-            if (Object.keys(mp).length === 0) {
-                Object.keys(f.properties || {}).forEach(k => {
-                    mp[k] = f.properties[k];
-                });
+        applyMapping();
+
+        const payload = allFeatures.map(f => {
+            const props = { ...(f.properties || {}), ...(f.mappedProperties || {}) };
+            const normalized = {};
+            for (const [k, v] of Object.entries(props)) {
+                normalized[k.trim().toLowerCase().replace(/\s+/g, '_')] = v;
             }
-            return {
-                geometry: f.geometry,
-                mappedProperties: mp
-            };
+            return { geometry: f.geometry, mappedProperties: normalized };
         });
 
         fetch("{{ route('import.process') }}", {
             method: 'POST',
             headers: {
-                'Content-Type':'application/json',
+                'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json'
             },
             body: JSON.stringify({
-                features: payloadFeatures,
-                form_id: chosenForm
+                features: payload,
+                form_id: formSelect.value
             })
-        }).then(async res => {
+        })
+        .then(async res => {
             const data = await res.json();
             if (res.ok) {
                 alert(data.message || 'Import selesai.');
-                // optional: reload page so /api/all will include new data
                 window.location.reload();
             } else {
                 alert(data.message || 'Import gagal.');
                 console.error(data);
             }
-        }).catch(err => {
+        })
+        .catch(err => {
             console.error(err);
-            alert('Error saat mengirim ke server.');
+            alert('Error kirim ke server.');
         });
     });
 })();
-</script
+</script>
 </x-app-layout>

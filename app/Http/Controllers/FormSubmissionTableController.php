@@ -139,4 +139,17 @@ class FormSubmissionTableController extends Controller
     {
         return redirect()->route('admin.submission.table', ['form_id' => $formId]);
     }
+
+    public function batchDestroy(Request $request)
+{
+    $ids = $request->input('ids', []);
+    if (empty($ids)) {
+        return back()->with('error', 'Tidak ada data yang dipilih.');
+    }
+
+    $deletedCount = FormSubmission::whereIn('_id', $ids)->delete();
+
+    return back()->with('success', $deletedCount . ' submission berhasil dihapus.');
+}
+
 }

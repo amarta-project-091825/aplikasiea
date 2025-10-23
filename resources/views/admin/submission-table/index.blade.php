@@ -27,12 +27,26 @@
                     </form>
                 </div>
             </div>
-        
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+            <form method="POST" action="{{ route('admin.submission.batchDestroy') }}" onsubmit="return confirm('Yakin hapus semua yang dipilih?')">
+                @csrf
+                @method('DELETE')
+
+                <div class="p-2 flex justify-end">
+                    <button type="submit"
+                        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                        id="batchDeleteButton"
+                        disabled>
+                        Hapus Terpilih
+                    </button>
+                </div>
+
                 <div class="p-0 overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-50 dark:bg-gray-900/40">
                             <tr>
+                                <th class="px-4 py-3">
+                                    <input type="checkbox" id="selectAll" class="rounded border-gray-300">
+                                </th>
                                 @foreach($columns as $col)
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         {{ ucfirst($col) }}
@@ -44,80 +58,24 @@
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             @forelse($submissions as $s)
                                 <tr>
-                                    @foreach($columns as $col)
-                                   @php
-                                    $val = $s->decoded_data[$col] 
-                                        ?? ($s->data[$col] ?? '-');
-
-                                    $file = $s->files[$col] ?? null;
-                                @endphp
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                @php
-                                    $val = $s->decoded_data[$col] ?? ($s->data[$col] ?? '-');
-                                    $file = $s->files[$col] ?? null;
-                                @endphp
-
-                                @if(is_array($val) && isset($val['mime']) && Str::startsWith($val['mime'], 'image/'))
-                                    <img src="{{ $val['data'] }}"
-                                        alt="{{ $val['name'] ?? 'File' }}"
-                                        class="h-16 w-auto rounded shadow">
-
-                                @elseif(is_string($val) && Str::contains($val, 'data:image'))
-                                    <img src="{{ $val }}" class="h-16 w-auto rounded shadow">
-
-                                @elseif(is_array($file) && isset($file['mime']))
-                                    @if(Str::startsWith($file['mime'], 'image/'))
-                                        <img src="{{ $file['data'] }}"
-                                            alt="{{ $file['name'] ?? 'File' }}"
-                                            class="h-16 w-auto rounded shadow">
-                                    @else
-                                        <a href="{{ $file['data'] }}"
-                                        download="{{ $file['name'] ?? 'file' }}"
-                                        class="text-indigo-600 underline">
-                                            {{ $file['name'] ?? 'Download File' }}
-                                        </a>
-                                    @endif
-
-                                    @elseif(is_array($file) && isset($file[0]) && isset($file[0]['mime']))
-                                        @foreach($file as $f)
-                                            @if(Str::startsWith($f['mime'], 'image/'))
-                                                <img src="{{ $f['data'] }}"
-                                                    alt="{{ $f['name'] ?? 'File' }}"
-                                                    class="h-16 w-auto rounded shadow mb-1">
-                                            @else
-                                                <a href="{{ $f['data'] }}"
-                                                download="{{ $f['name'] ?? 'file' }}"
-                                                class="text-indigo-600 underline block">
-                                                    {{ $f['name'] ?? 'Download File' }}
-                                                </a>
-                                            @endif
-                                        @endforeach
-
-                                        @else
-                                            @if(is_array($val))
-                                                {{ implode(', ', $val) }}
-                                            @else
-                                                {{ $val }}
-                                            @endif
-                                        @endif
+                                    <td class="px-4 py-4">
+                                        <input type="checkbox" name="ids[]" value="{{ $s->_id }}" class="rowCheckbox rounded border-gray-300">
                                     </td>
+                                    @foreach($columns as $col)
+                                        <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                                            {{ $s->decoded_data[$col] ?? '-' }}
+                                        </td>
                                     @endforeach
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
-                                        <div class="inline-flex gap-2">
-                                            <a href="{{ route('admin.submission.edit',$s->_id) }}"
+                                    <td class="px-6 py-4 text-right text-sm">
+                                        <a href="{{ route('admin.submission.edit',$s->_id) }}"
                                             class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                                Edit
-                                            </a>
-                                            <form action="{{ route('admin.submission.destroy',$s->_id) }}" method="post" class="inline">
-                                                @csrf @method('delete')
-                                                <button type="submit" class="px-3 py-1 rounded border border-red-300 text-red-700 hover:bg-red-50" onclick="return confirm('Hapus submission ini?')">Hapus</button>
-                                            </form>
-                                        </div>
+                                            Edit
+                                        </a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ count($columns)+1 }}" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    <td colspan="{{ count($columns)+2 }}" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                                         Belum ada submission.
                                     </td>
                                 </tr>
@@ -125,6 +83,7 @@
                         </tbody>
                     </table>
                 </div>
+            </form>        
                 
                 <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
                     {{ $submissions->links() }}
@@ -132,4 +91,25 @@
             </div>
         </div>
     </div>
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.rowCheckbox');
+    const deleteBtn = document.getElementById('batchDeleteButton');
+
+    selectAll.addEventListener('change', () => {
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        deleteBtn.disabled = !selectAll.checked;
+    });
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            const anyChecked = Array.from(checkboxes).some(c => c.checked);
+            deleteBtn.disabled = !anyChecked;
+            selectAll.checked = Array.from(checkboxes).every(c => c.checked);
+        });
+    });
+});
+</script>
+
 </x-app-layout>
