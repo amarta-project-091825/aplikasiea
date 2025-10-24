@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Helpers\GeoJSONConverter;
 use App\Models\FormSubmission;
+use Illuminate\Support\Facades\Log;
 
 class GeoJSONController extends Controller
 {
@@ -85,122 +86,89 @@ class GeoJSONController extends Controller
     }
 
     public function importGeoJSON(Request $request)
-    {
-        //Log::info('Memulai proses import GeoJSON', $request->all());
+{
+    $request->validate([
+        'features' => 'required|array',
+        'form_id' => 'required|string'
+    ]);
 
-        $request->validate([
-            'features' => 'required|array',
-            'form_id' => 'required|string'
-        ]);
+    $features = $request->input('features');
+    $formId = $request->input('form_id');
 
-        $features = $request->input('features');
-        $formId = $request->input('form_id');
-        ///Log::info("Import dimulai untuk form_id=$formId, total fitur=".count($features));
-
-        $count = 0; 
-        $skipped = 0;
-
-        $form = \App\Models\Form::find($formId);
-        $fieldNames = [];
-        if ($form) {
-            $fields = is_string($form->fields) ? json_decode($form->fields, true) : $form->fields;
-            $fieldNames = collect($fields)->pluck('name')->toArray();
-            //Log::info("Field names untuk form $formId: ", $fieldNames);
-        } else {
-            //Log::warning("Form tidak ditemukan untuk ID $formId");
-        }
-
-        foreach ($features as $i => $f) {
-            //Log::info("Memproses fitur ke-$i");
-
-            $geometry = $f['geometry'] ?? null;
-            $props = $f['mappedProperties'] ?? [];
-
-            if (!$geometry || !is_array($geometry)) {
-                //Log::warning("Fitur $i dilewati, geometry tidak valid");
-                $skipped++;
-                continue;
-            }
-
-            $geomType = $geometry['type'] ?? null;
-            $coords = $geometry['coordinates'] ?? null;
-            if (!$geomType || !$coords) {
-                //Log::warning("Fitur $i dilewati, type/coordinates kosong");
-                $skipped++; 
-                continue; 
-            }
-
-            if ($geomType === 'LineString') {
-                $start = $coords[0];
-                $end = end($coords);
-            } elseif ($geomType === 'Point') {
-                $start = $end = $coords;
-            } else {
-                $start = $end = is_array($coords) ? (is_array($coords[0]) ? $coords[0] : $coords) : null;
-            }
-
-            if (!is_array($start) || !isset($start[0]) || !isset($start[1])) {
-                //Log::warning("Fitur $i dilewati, koordinat tidak lengkap");
-                $skipped++;
-                continue;
-            }
-
-            $latStart = is_numeric($start[1]) ? floatval($start[1]) : null;
-            $lngStart = is_numeric($start[0]) ? floatval($start[0]) : null;
-            $latEnd = is_numeric($end[1]) ? floatval($end[1]) : null;
-            $lngEnd = is_numeric($end[0]) ? floatval($end[0]) : null;
-
-            if ($latStart === null || $lngStart === null) {
-                //Log::warning("Fitur $i dilewati, koordinat awal tidak valid");
-                $skipped++;
-                continue;
-            }
-
-            $dataToSave = [];
-            foreach ($fieldNames as $fname) {
-                $dataToSave[$fname] = $props[$fname] ?? null;
-            }
-
-            $dataToSave['latitude_awal'] = $latStart;
-            $dataToSave['longitude_awal'] = $lngStart;
-            $dataToSave['latitude_akhir'] = $latEnd;
-            $dataToSave['longitude_akhir'] = $lngEnd;
-
-            //Log::debug("Data yang akan disimpan fitur $i:", $dataToSave);
-
-            $existsQuery = FormSubmission::where('form_id', $formId)
-                ->where('data.latitude_awal', $dataToSave['latitude_awal'])
-                ->where('data.longitude_awal', $dataToSave['longitude_awal']);
-
-            if (!empty($dataToSave['nama_jalan'])) {
-                $existsQuery->where('data.nama_jalan', $dataToSave['nama_jalan']);
-            } elseif (!empty($dataToSave['nama'])) {
-                $existsQuery->where('data.nama', $dataToSave['nama']);
-            }
-
-            if ($existsQuery->exists()) {
-                //Log::info("Fitur $i dilewati, data duplikat terdeteksi");
-                $skipped++;
-                continue;
-            }
-
-            FormSubmission::create([
-                'form_id' => $formId,
-                'data' => $dataToSave,
-                'geometry' => $geometry,
-            ]);
-
-            $count++;
-            //Log::info("Fitur $i berhasil disimpan");
-        }
-
-        $message = "$count fitur berhasil diimport, $skipped dilewati (invalid/duplikat).";
-        //Log::info("Import selesai. $message");
-
-        if ($request->wantsJson() || $request->isJson()) {
-            return response()->json(['success' => true, 'message' => $message]);
-        }
-
-        return back()->with('success', $message);
+    // Ambil field dari form
+    $form = \App\Models\Form::find($formId);
+    $fieldNames = [];
+    if ($form) {
+        $fields = is_string($form->fields) ? json_decode($form->fields, true) : $form->fields;
+        $fieldNames = collect($fields)->pluck('name')->toArray();
     }
+
+    $count = 0;
+    $skipped = 0;
+
+    $existingRecords = FormSubmission::where('form_id', $formId)->get();
+
+foreach ($features as $f) {
+    $geometry = $f['geometry'] ?? null;
+    $props = $f['mappedProperties'] ?? [];
+    if (!$geometry || empty($geometry['coordinates'])) continue;
+
+    $start = $geometry['coordinates'][0];
+    $end = end($geometry['coordinates']);
+    $latStart = floatval($start[1]);
+    $lngStart = floatval($start[0]);
+    $latEnd = isset($end[1]) ? floatval($end[1]) : null;
+    $lngEnd = isset($end[0]) ? floatval($end[0]) : null;
+
+    $dataToSave = [];
+    foreach ($fieldNames as $fname) {
+        $dataToSave[$fname] = $props[$fname] ?? null;
+    }
+    $dataToSave['latitude_awal'] = $latStart;
+    $dataToSave['longitude_awal'] = $lngStart;
+    $dataToSave['latitude_akhir'] = $latEnd;
+    $dataToSave['longitude_akhir'] = $lngEnd;
+
+    // cari record yang udah ada (berdasarkan koordinat awal)
+    $existingRecord = $existingRecords->first(function ($r) use ($latStart, $lngStart) {
+        return abs($r->data['latitude_awal'] - $latStart) < 0.000001
+            && abs($r->data['longitude_awal'] - $lngStart) < 0.000001;
+    });
+
+    if ($existingRecord) {
+        $existingData = $existingRecord->data;
+        $updated = false;
+        foreach ($dataToSave as $key => $value) {
+            if (($existingData[$key] ?? null) === null && $value !== null) {
+                $existingData[$key] = $value;
+                $updated = true;
+            }
+        }
+        if ($updated) {
+            $existingRecord->update(['data' => $existingData]);
+            $count++;
+        } else {
+            $skipped++;
+        }
+    } else {
+        Log::info('Record baru disimpan', ['form_id' => $formId, 'data' => $dataToSave]);
+        FormSubmission::create([
+            'form_id' => $formId,
+            'data' => $dataToSave,
+            'geometry' => $geometry,
+        ]);
+        $count++;
+    }
+}
+
+    $message = "$count fitur berhasil diimport, $skipped dilewati (invalid/duplikat).";
+
+    if ($request->wantsJson() || $request->isJson()) {
+        return response()->json(['success' => true, 'message' => $message]);
+    }
+
+    return back()->with('success', $message);
+}
+
+
 }
