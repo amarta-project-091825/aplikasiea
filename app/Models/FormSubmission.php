@@ -12,7 +12,7 @@ class FormSubmission extends Model
     public $incrementing = true;
 
     protected $fillable = [
-        'form_id', 'data', 'files', 'submitted_by'
+        'form_id', 'data', 'files', 'submitted_by', 'geometry'
     ];
 
     protected $casts = [

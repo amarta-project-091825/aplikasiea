@@ -160,7 +160,6 @@
                 <button class="hapus-btn px-2 py-1 bg-red-600 text-white rounded">Hapus</button>
             `;
 
-            // tombol hapus
             row.querySelector('.hapus-btn').addEventListener('click', () => {
                 allFeatures.forEach(f => {
                     delete f.properties[key];
@@ -172,21 +171,24 @@
             mappingContainer.appendChild(row);
         });
     }
-
+    
     function applyMapping() {
+        const mapConfig = {};
+        document.querySelectorAll('#mappingContainer > div[data-prop]').forEach(row => {
+            const sourceKey = row.dataset.prop;
+            const dropdown = row.querySelector('select');
+            const mappedKey = dropdown.value;
+            if (mappedKey) mapConfig[sourceKey] = mappedKey;
+        });
+
         allFeatures.forEach(f => {
             f.mappedProperties = {};
-            document.querySelectorAll('#mappingContainer > div[data-prop]').forEach(row => {
-                const key = row.dataset.prop;
-                const dropdown = row.querySelector('select');
-                const input = row.querySelector('input');
-                const mappedKey = dropdown.value;
-                const value = input.value;
-                if (mappedKey) f.mappedProperties[mappedKey] = value;
+            const props = f.properties || {};
+            Object.entries(mapConfig).forEach(([sourceKey, targetKey]) => {
+                f.mappedProperties[targetKey] = props[sourceKey] ?? '';
             });
         });
     }
-
     submitBtn.addEventListener('click', () => {
         if (!allFeatures.length) {
             alert('Tidak ada fitur untuk diimport.');
@@ -203,6 +205,8 @@
             }
             return { geometry: f.geometry, mappedProperties: normalized };
         });
+
+        console.log("Geometry sebelum dikirim:", allFeatures.map(f => f.geometry));
 
         fetch("{{ route('import.process') }}", {
             method: 'POST',

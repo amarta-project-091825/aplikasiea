@@ -33,7 +33,7 @@
             .then(res => res.json())
             .then(data => {
                 console.log('GeoJSON fetched:', data);
-
+                console.log(data.features[0].geometry);
                 if (!data.features || data.features.length === 0) {
                     console.warn('GeoJSON features kosong!');
                     return;

@@ -2,13 +2,10 @@
 
 namespace App\Helpers;
 
-use App\Models\Form; // pastiin model Form kamu bener
+use App\Models\Form;
 
 class GeoJSONConverter
 {
-    /**
-     * Convert a generic FormSubmission record to a GeoJSON Feature.
-     */
     public static function convertRecord($record)
     {
         $dataField = null;
@@ -34,16 +31,16 @@ class GeoJSONConverter
             $data = [];
         }
 
-        // geometry: pakai yang disimpan atau infer dari data lama
-        if (is_array($geometryField) && !empty($geometryField['type']) && !empty($geometryField['coordinates'])) {
+        // geometry: pakai seluruh koordinat dari DB jika ada
+        if (!empty($geometryField['type']) && !empty($geometryField['coordinates'])) {
             $geom = $geometryField;
         } else {
+            // fallback legacy: hanya ambil start-end
             $geom = self::inferGeometryFromData($data);
         }
 
         if (!$geom) return null;
 
-        // bangun atribut dinamis dari form definition
         $props = self::buildPropertiesFromForm($data, $formId);
         $props['id'] = (string) ($id ?? ($data['id'] ?? null));
 
@@ -54,45 +51,29 @@ class GeoJSONConverter
         ];
     }
 
-    /**
-     * Build property fields dynamically from the form structure in DB.
-     */
     protected static function buildPropertiesFromForm(array $data, $formId = null)
     {
         $props = [];
-
-        // kalau form_id valid, ambil definisinya biar tau field apa aja
         $form = $formId ? Form::find($formId) : null;
         $formFields = [];
 
         if ($form && isset($form->template['fields'])) {
-            // asumsikan struktur form->template['fields'] berisi daftar field
             foreach ($form->template['fields'] as $f) {
-                if (isset($f['name'])) {
-                    $formFields[] = $f['name'];
-                }
+                if (isset($f['name'])) $formFields[] = $f['name'];
             }
         }
 
-        // kalau gak ada template, fallback ke semua key data
-        if (empty($formFields)) {
-            $formFields = array_keys($data);
-        }
+        if (empty($formFields)) $formFields = array_keys($data);
 
-        // isi semua field yang sesuai template
         foreach ($formFields as $key) {
             $props[$key] = $data[$key] ?? null;
         }
 
-        // simpan full data mentah buat debugging atau viewer
         $props['_raw'] = $data;
 
         return $props;
     }
 
-    /**
-     * Infer geometry dari data lama (legacy support).
-     */
     protected static function inferGeometryFromData(array $data)
     {
         // jembatan
