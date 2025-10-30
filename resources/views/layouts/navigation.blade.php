@@ -29,6 +29,11 @@
                         <x-nav-link :href="route('admin.submission.table')" :active="request()->routeIs('admin.submission.*')">
                             {{ __('Submission Table') }}
                         </x-nav-link>
+
+                        <x-nav-link :href="route('import.form')" :active="request()->routeIs('import.form')">
+                            {{ __('Import GeoJSON') }}
+                        </x-nav-link>
+
                     @endif
 
                         <x-nav-link :href="route('peta.index')" :active="request()->routeIs('peta.*')">
@@ -39,10 +44,10 @@
                             {{ __('Form') }}
                         </x-nav-link>
 
-                        <x-nav-link :href="route('form-submissions.index')" :active="request()->routeIs('form-submissions.*')">
+                        {{--  <x-nav-link :href="route('form-submissions.index')" :active="request()->routeIs('form-submissions.*')">
                             {{ __('Submissions') }}
                         </x-nav-link>
-
+--}}
                         <x-nav-link :href="route('laporan.create')" :active="request()->routeIs('laporan.*')">
                             {{ __('Laporan') }}
                         </x-nav-link>

@@ -27,6 +27,7 @@
                     </form>
                 </div>
             </div>
+
             <form method="POST" action="{{ route('admin.submission.batchDestroy') }}" onsubmit="return confirm('Yakin hapus semua yang dipilih?')">
                 @csrf
                 @method('DELETE')
@@ -63,7 +64,19 @@
                                     </td>
                                     @foreach($columns as $col)
                                         <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                                            {{ $s->decoded_data[$col] ?? '-' }}
+                                            @php
+                                                $val = $s->decoded_data[$col] ?? '-';
+                                            @endphp
+
+                                            @if(is_array($val))
+                                                {{-- kalau array, gabungkan aja --}}
+                                                {{ implode(', ', $val) }}
+                                            @elseif(is_string($val) && Str::startsWith($val, 'data:image'))
+                                                {{-- kalau base64 image --}}
+                                                <img src="{{ $val }}" alt="uploaded image" class="h-16 w-16 object-cover rounded">
+                                            @else
+                                                {{ $val }}
+                                            @endif
                                         </td>
                                     @endforeach
                                     <td class="px-6 py-4 text-right text-sm">
@@ -85,31 +98,30 @@
                 </div>
             </form>        
                 
-                <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
-                    {{ $submissions->links() }}
-                </div>
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+                {{ $submissions->links() }}
             </div>
         </div>
     </div>
+
     <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const selectAll = document.getElementById('selectAll');
-    const checkboxes = document.querySelectorAll('.rowCheckbox');
-    const deleteBtn = document.getElementById('batchDeleteButton');
+        document.addEventListener('DOMContentLoaded', () => {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.rowCheckbox');
+            const deleteBtn = document.getElementById('batchDeleteButton');
 
-    selectAll.addEventListener('change', () => {
-        checkboxes.forEach(cb => cb.checked = selectAll.checked);
-        deleteBtn.disabled = !selectAll.checked;
-    });
+            selectAll.addEventListener('change', () => {
+                checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                deleteBtn.disabled = !selectAll.checked;
+            });
 
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', () => {
-            const anyChecked = Array.from(checkboxes).some(c => c.checked);
-            deleteBtn.disabled = !anyChecked;
-            selectAll.checked = Array.from(checkboxes).every(c => c.checked);
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    const anyChecked = Array.from(checkboxes).some(c => c.checked);
+                    deleteBtn.disabled = !anyChecked;
+                    selectAll.checked = Array.from(checkboxes).every(c => c.checked);
+                });
+            });
         });
-    });
-});
-</script>
-
+    </script>
 </x-app-layout>
