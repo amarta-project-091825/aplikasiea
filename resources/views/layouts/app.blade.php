@@ -56,6 +56,27 @@
                     </x-nav-link>
                 @endif
 
+                 {{-- Admin menu, hanya untuk role_id = 2 --}}
+                @if(optional(Auth::user())->role_id === 2)
+                    <x-nav-link :href="route('admin.submission.table')" :active="request()->routeIs('admin.submission.*')" class="w-full px-3 py-2 rounded transition hover:bg-gray-100">
+                        <x-icon name="table-cells" class="w-5 h-5 mr-2 inline-block" />
+                        Submission Table
+                    </x-nav-link>
+
+                    <x-nav-link :href="route('import.form')" :active="request()->routeIs('import.form')" class="w-full px-3 py-2 rounded transition hover:bg-gray-100">
+                        <x-icon name="arrow-up-tray" class="w-5 h-5 mr-2 inline-block" />
+                        Import GeoJSON
+                    </x-nav-link>
+                @endif
+
+                {{-- Admin menu, hanya untuk role_id = 3 --}}
+                @if(optional(Auth::user())->role_id === 3)
+                    <x-nav-link :href="route('admin.laporan-validasi.index')" :active="request()->routeIs('admin.laporan-validasi.*')" class="w-full px-3 py-2 rounded transition hover:bg-gray-100">
+                    <x-icon name="check-circle" class="w-5 h-5 mr-2 inline-block" />
+                    Validasi
+                </x-nav-link>
+                @endif
+
                 {{-- General menu --}}
                 <x-nav-link :href="route('peta.index')" :active="request()->routeIs('peta.*')" class="w-full px-3 py-2 rounded transition hover:bg-gray-100">
                     <x-icon name="map" class="w-5 h-5 mr-2 inline-block" />
@@ -70,11 +91,6 @@
                 <x-nav-link :href="route('laporan.create')" :active="request()->routeIs('laporan.*')" class="w-full px-3 py-2 rounded transition hover:bg-gray-100">
                     <x-icon name="pencil-square" class="w-5 h-5 mr-2 inline-block" />
                     Laporan
-                </x-nav-link>
-
-                <x-nav-link :href="route('admin.laporan-validasi.index')" :active="request()->routeIs('admin.laporan-validasi.*')" class="w-full px-3 py-2 rounded transition hover:bg-gray-100">
-                    <x-icon name="check-circle" class="w-5 h-5 mr-2 inline-block" />
-                    Validasi
                 </x-nav-link>
 
             </div>
