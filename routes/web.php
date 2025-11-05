@@ -28,35 +28,45 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 // 1a. Tes murni teks (tanpa role)
-Route::get('/__ping', fn() => 'pong');
+Route::middleware(['auth','verified'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
 
-Route::middleware(['auth','verified','role:admin','role:1'])
-    ->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/__ping', fn() => 'admin pong');
-        Route::resource('users', UserManagementController::class)->except(['show']);
-        Route::resource('forms', FormController::class); // index, create, store, edit, update, destroy
-        Route::get('/submission-table', [FormSubmissionTableController::class, 'index'])->name('submission.table');
-        Route::get('/submission-table/{id}/edit', [FormSubmissionTableController::class, 'edit'])->name('submission.edit');
-        Route::put('/submission-table/{id}', [FormSubmissionTableController::class, 'update'])->name('submission.update');
-        Route::delete('/submission-table/{id}', [FormSubmissionTableController::class, 'destroy'])->name('submission.destroy');
-        Route::get('/admin/submission-table', [FormSubmissionTableController::class, 'index'])->name('admin.submission.table');
+        // hanya admin
+        Route::middleware('role:admin,1')->group(function () {
+            Route::resource('users', UserManagementController::class)->except(['show']);
+            Route::resource('forms', FormController::class);
+            Route::get('/form-submissions', [FormSubmissionPublicController::class, 'index'])->name('form-submissions.index');
+            Route::get('/form-submissions/{submission}', [FormSubmissionPublicController::class, 'show'])->name('form-submissions.show');
+            Route::delete('/admin/submission/batch', [FormSubmissionTableController::class, 'batchDestroy'])
+            ->name('submission.batchDestroy');
+        });
 
-});
+        // admin atau petugas data
+        Route::middleware('role:admin,1,petugas-data,2')->group(function () {
+            Route::get('/submission-table', [FormSubmissionTableController::class, 'index'])->name('submission.table');
+            Route::get('/submission-table/{id}/edit', [FormSubmissionTableController::class, 'edit'])->name('submission.edit');
+            Route::put('/submission-table/{id}', [FormSubmissionTableController::class, 'update'])->name('submission.update');
+            Route::delete('/submission-table/{id}', [FormSubmissionTableController::class, 'destroy'])->name('submission.destroy');
+            Route::get('/admin/import-geojson', [GeoJSONController::class, 'showImportForm'])->name('import.form');
+            Route::post('/admin/import-geojson', [GeoJSONController::class, 'importGeoJSON'])->name('import.process');
+        });
+        
+        Route::middleware('role:admin,1,petugas-tl,3')->group(function () {
+            Route::get('/laporan/validasi', [ValidasiLaporanController::class, 'index'])->name('laporan-validasi.index');
+            Route::get('/laporan/{id}/validasi', [ValidasiLaporanController::class, 'edit'])->name('laporan-validasi.edit');
+            Route::put('/laporan/{id}/validasi', [ValidasiLaporanController::class, 'update'])->name('laporan-validasi.update');
+            Route::delete('/admin/laporan-validasi/{id}', [ValidasiLaporanController::class, 'destroy'])
+            ->name('laporan-validasi.destroy');
+        });
+
+    });
 
 Route::middleware(['auth','verified'])->group(function () {
     Route::get('/forms', [DynamicFormController::class, 'list'])->name('forms.list');
     Route::get('/forms/{slug}', [DynamicFormController::class, 'show'])->name('forms.show');
     Route::post('/forms/{slug}', [DynamicFormController::class, 'submit'])->name('forms.submit');
-    Route::get('/form-submissions', [FormSubmissionPublicController::class, 'index'])->name('form-submissions.index');
-    Route::get('/form-submissions/{submission}', [FormSubmissionPublicController::class, 'show'])->name('form-submissions.show');
-    Route::get('/laporan/validasi', [ValidasiLaporanController::class, 'index'])->name('admin.laporan-validasi.index');
-    Route::get('/laporan/{id}/validasi', [ValidasiLaporanController::class, 'edit'])->name('admin.laporan-validasi.edit');
-    Route::put('/laporan/{id}/validasi', [ValidasiLaporanController::class, 'update'])->name('admin.laporan-validasi.update');
-    Route::delete('/admin/laporan-validasi/{id}', [ValidasiLaporanController::class, 'destroy'])
-    ->name('admin.laporan-validasi.destroy');
-    Route::delete('/admin/submission/batch', [FormSubmissionTableController::class, 'batchDestroy'])
-    ->name('admin.submission.batchDestroy');
-
 });
 
 Route::get('/laporan', [LaporanMasyarakatController::class, 'create'])->name('laporan.create'); // tampilkan form publik
@@ -78,9 +88,6 @@ Route::get('/laporan/send-otp-test', function () {
 });
 
 Route::get('/peta', [PetaController::class, 'index'])->name('peta.index');
-Route::get('/admin/import-geojson', [GeoJSONController::class, 'showImportForm'])->name('import.form');
-Route::post('/admin/import-geojson', [GeoJSONController::class, 'importGeoJSON'])->name('import.process');
-
     
 
 require __DIR__.'/auth.php';

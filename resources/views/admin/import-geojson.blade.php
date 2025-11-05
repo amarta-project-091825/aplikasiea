@@ -208,7 +208,7 @@
 
         console.log("Geometry sebelum dikirim:", allFeatures.map(f => f.geometry));
 
-        fetch("{{ route('import.process') }}", {
+        fetch("{{ route('admin.import.process') }}", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
