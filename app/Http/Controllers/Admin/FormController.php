@@ -44,7 +44,7 @@ class FormController extends Controller
             'fields'      => ['required','array','min:1'],
             'fields.*.label'    => ['required','string','max:150'],
             'fields.*.name'     => ['required','string','max:150'],
-            'fields.*.type'     => ['required','in:text,number,textarea,select,radio,checkbox,date,file,email,tel'],
+            'fields.*.type'     => ['required','in:text,number,textarea,select,radio,checkbox,date,file,email,tel,map_drawer'],
             'fields.*.required' => ['boolean'],
             'fields.*.options'  => ['nullable','array'],   // ⬅️ tambahin ini
             'fields.*.options.*'=> ['string','max:255'],
@@ -94,7 +94,7 @@ class FormController extends Controller
             'fields'      => ['required','array','min:1'],
             'fields.*.label'    => ['required','string','max:150'],
             'fields.*.name'     => ['required','string','max:150'],
-            'fields.*.type'     => ['required','in:text,number,textarea,select,radio,checkbox,date,file,email,tel'],
+            'fields.*.type'     => ['required','in:text,number,textarea,select,radio,checkbox,date,file,email,tel,map_drawer'],
             'fields.*.required' => ['boolean'],
             'fields.*.options'  => ['nullable','array'],   // ⬅️ tambahin ini
             'fields.*.options.*'=> ['string','max:255'],

@@ -129,6 +129,15 @@ foreach ($features as $f) {
     $dataToSave['latitude_akhir'] = $latEnd;
     $dataToSave['longitude_akhir'] = $lngEnd;
 
+        if(isset($record->data['koordinat_latlng'])) {
+        // convert ke LineString
+        $coords = $record->data['koordinat_latlng'];
+        $geometry = [
+            'type' => 'LineString',
+            'coordinates' => array_map(fn($c) => [$c[1], $c[0]], $coords) // [lng, lat]
+        ];
+    }
+
     // cari record yang udah ada (berdasarkan koordinat awal)
     $existingRecord = $existingRecords->first(function ($r) use ($latStart, $lngStart) {
         return abs($r->data['latitude_awal'] - $latStart) < 0.000001
