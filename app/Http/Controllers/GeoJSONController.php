@@ -85,7 +85,7 @@ class GeoJSONController extends Controller
         return response()->json($fieldNames);
     }
 
-    public function importGeoJSON(Request $request)
+   public function importGeoJSON(Request $request)
 {
     $request->validate([
         'features' => 'required|array',
@@ -108,67 +108,65 @@ class GeoJSONController extends Controller
 
     $existingRecords = FormSubmission::where('form_id', $formId)->get();
 
-foreach ($features as $f) {
-    $geometry = $f['geometry'] ?? null;
-    $props = $f['mappedProperties'] ?? [];
-    if (!$geometry || empty($geometry['coordinates'])) continue;
+    foreach ($features as $f) {
+        $geometry = $f['geometry'] ?? null;
+        $props = $f['mappedProperties'] ?? [];
 
-    $start = $geometry['coordinates'][0];
-    $end = end($geometry['coordinates']);
-    $latStart = floatval($start[1]);
-    $lngStart = floatval($start[0]);
-    $latEnd = isset($end[1]) ? floatval($end[1]) : null;
-    $lngEnd = isset($end[0]) ? floatval($end[0]) : null;
+        if (!$geometry || empty($geometry['coordinates'])) continue;
 
-    $dataToSave = [];
-    foreach ($fieldNames as $fname) {
-        $dataToSave[$fname] = $props[$fname] ?? null;
-    }
-    $dataToSave['latitude_awal'] = $latStart;
-    $dataToSave['longitude_awal'] = $lngStart;
-    $dataToSave['latitude_akhir'] = $latEnd;
-    $dataToSave['longitude_akhir'] = $lngEnd;
+        $coords = $geometry['coordinates']; // lng, lat format
 
-        if(isset($record->data['koordinat_latlng'])) {
-        // convert ke LineString
-        $coords = $record->data['koordinat_latlng'];
-        $geometry = [
-            'type' => 'LineString',
-            'coordinates' => array_map(fn($c) => [$c[1], $c[0]], $coords) // [lng, lat]
-        ];
-    }
+        // ✅ Convert to map_drawer format [lat, lng]
+        $latlng = array_map(fn($c) => [floatval($c[1]), floatval($c[0])], $coords);
 
-    // cari record yang udah ada (berdasarkan koordinat awal)
-    $existingRecord = $existingRecords->first(function ($r) use ($latStart, $lngStart) {
-        return abs($r->data['latitude_awal'] - $latStart) < 0.000001
-            && abs($r->data['longitude_awal'] - $lngStart) < 0.000001;
-    });
+        $dataToSave = [];
+        foreach ($fieldNames as $fname) {
+            $dataToSave[$fname] = $props[$fname] ?? null;
+        }
 
-    if ($existingRecord) {
-        $existingData = $existingRecord->data;
-        $updated = false;
-        foreach ($dataToSave as $key => $value) {
-            if (($existingData[$key] ?? null) === null && $value !== null) {
-                $existingData[$key] = $value;
-                $updated = true;
+        // ✅ Simpan koordinat ke field baru
+        $dataToSave['koordinat_latlng'] = $latlng;
+
+        // Cari apakah sudah ada record dengan koordinat start yang sama
+        $existingRecord = $existingRecords->first(function ($r) use ($latlng) {
+            $old = $r->data['koordinat_latlng'] ?? null;
+            if (!$old || !is_array($old) || count($old) === 0) return false;
+
+            // Bandingkan titik pertama
+            return abs($old[0][0] - $latlng[0][0]) < 0.000001 &&
+                   abs($old[0][1] - $latlng[0][1]) < 0.000001;
+        });
+
+        if ($existingRecord) {
+            // Merge update data
+            $existingData = is_string($existingRecord->data)
+                ? json_decode($existingRecord->data, true)
+                : $existingRecord->data;
+
+            $updated = false;
+            foreach ($dataToSave as $key => $value) {
+                if ($value !== null && ($existingData[$key] ?? null) !== $value) {
+                    $existingData[$key] = $value;
+                    $updated = true;
+                }
             }
-        }
-        if ($updated) {
-            $existingRecord->update(['data' => $existingData]);
-            $count++;
+
+            if ($updated) {
+                $existingRecord->update(['data' => $existingData]);
+                $count++;
+            } else {
+                $skipped++;
+            }
+
         } else {
-            $skipped++;
+            // Simpan baru
+            FormSubmission::create([
+                'form_id' => $formId,
+                'data' => $dataToSave,
+            ]);
+            $count++;
         }
-    } else {
-        Log::info('Record baru disimpan', ['form_id' => $formId, 'data' => $dataToSave]);
-        FormSubmission::create([
-            'form_id' => $formId,
-            'data' => $dataToSave,
-            'geometry' => $geometry,
-        ]);
-        $count++;
     }
-}
 
     $message = "$count fitur berhasil diimport, $skipped dilewati (invalid/duplikat).";
 
@@ -177,7 +175,5 @@ foreach ($features as $f) {
     }
 
     return back()->with('success', $message);
-}
-
-
+  }
 }
