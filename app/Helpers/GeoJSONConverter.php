@@ -31,11 +31,48 @@ class GeoJSONConverter
             $data = [];
         }
 
+        // Cek map_drawer dulu (koordinat_latlng)
+        if (isset($data['koordinat_latlng'])) {
+            $coords = $data['koordinat_latlng'];
+
+            if (is_string($coords)) {
+                $coords = json_decode($coords, true);
+            }
+
+            if (is_array($coords) && count($coords) > 0) {
+
+                // point
+                if (count($coords) === 1) {
+                    $c = $coords[0];
+                    return [
+                        'type' => 'Feature',
+                        'geometry' => [
+                            'type' => 'Point',
+                            'coordinates' => [$c[1], $c[0]]
+                        ],
+                        'properties' => self::buildPropertiesFromForm($data, $formId),
+                    ];
+                }
+
+                // line
+                $lineCoords = array_map(fn($c) => [$c[1], $c[0]], $coords);
+
+                return [
+                    'type' => 'Feature',
+                    'geometry' => [
+                        'type' => 'LineString',
+                        'coordinates' => $lineCoords
+                    ],
+                    'properties' => self::buildPropertiesFromForm($data, $formId),
+                ];
+            }
+        }
+
+        // kalau bukan map_drawer, baru pakai logic lama
         // geometry: pakai seluruh koordinat dari DB jika ada
         if (!empty($geometryField['type']) && !empty($geometryField['coordinates'])) {
             $geom = $geometryField;
         } else {
-            // fallback legacy: hanya ambil start-end
             $geom = self::inferGeometryFromData($data);
         }
 
@@ -49,6 +86,8 @@ class GeoJSONConverter
             'geometry' => $geom,
             'properties' => $props,
         ];
+
+
     }
 
     protected static function buildPropertiesFromForm(array $data, $formId = null)

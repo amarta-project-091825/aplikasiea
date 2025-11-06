@@ -33,6 +33,10 @@ class DynamicFormController extends Controller
             $name = $f['name'];
             $type = $f['type'];
             $req  = !empty($f['required']) ? 'required' : 'nullable';
+            
+            if ($type === 'map_drawer') {
+                $name .= '_latlng'; // validasi pakai input hidden yang dikirim
+            }
 
             switch ($type) {
                 case 'number':
@@ -72,6 +76,13 @@ class DynamicFormController extends Controller
 
         $validated = $request->validate($rules);
 
+        foreach ($form->fields as $f) {
+            $latlngField = $f['name'].'_latlng';
+            if ($f['type'] === 'map_drawer' && $request->has($latlngField)) {
+                $validated[$latlngField] = $request->input($latlngField); // simpan string JSON koordinat
+            }
+        }
+        
         // Upload file (jika ada)
         $filesSaved = [];
         foreach ($form->fields as $f) {
