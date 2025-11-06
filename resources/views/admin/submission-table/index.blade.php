@@ -67,13 +67,27 @@
                                             @php
                                                 $val = $s->decoded_data[$col] ?? '-';
                                             @endphp
+                                           @if($col === 'koordinat_latlng' && !empty($val))
+                                                <a href="{{ route('peta.index', ['submission_id' => $s->_id]) }}"
+                                                class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-xs">
+                                                    Lihat di Peta
+                                                </a>
+                                            @elseif(is_array($val))
+                                                @php
+                                                    $isAssoc = array_keys($val) !== range(0, count($val) - 1);
+                                                @endphp
 
-                                            @if(is_array($val))
-                                                {{-- kalau array, gabungkan aja --}}
-                                                {{ implode(', ', $val) }}
+                                                @if($isAssoc)
+                                                    <div class="text-xs text-gray-600 dark:text-gray-300">
+                                                        @foreach($val as $k => $v)
+                                                            <div>{{ $k }}: {{ is_array($v) ? json_encode($v) : $v }}</div>
+                                                        @endforeach
+                                                    </div>
+                                                @else
+                                                    {{ implode(', ', array_map(fn($v) => is_array($v) ? json_encode($v) : $v, $val)) }}
+                                                @endif
                                             @elseif(is_string($val) && Str::startsWith($val, 'data:image'))
-                                                {{-- kalau base64 image --}}
-                                                <img src="{{ $val }}" alt="uploaded image" class="h-16 w-16 object-cover rounded">
+                                                <img src="{{ $val }}" class="h-16 w-16 object-cover rounded">
                                             @else
                                                 {{ $val }}
                                             @endif
