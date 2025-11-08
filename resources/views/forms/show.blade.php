@@ -99,9 +99,18 @@
                             {{-- MAP DRAWER --}}
                             @if($f['type'] === 'map_drawer')
                                 <div class="mt-4">
+                                    <div class="flex gap-2 mb-2">
+                                        <button type="button" class="px-3 py-1 bg-indigo-600 text-white rounded" onclick="setMode{{$index}}('road')">
+                                            Gambar Jalan
+                                        </button>
+                                        <button type="button" class="px-3 py-1 bg-green-600 text-white rounded" onclick="setMode{{$index}}('bridge')">
+                                            Tandai Jembatan
+                                        </button>
+                                    </div>
+
                                     <div id="map_{{ $index }}" class="h-64 w-full border rounded mb-2"></div>
                                     <input type="hidden" name="{{ $f['name'] }}_latlng" id="input_{{ $index }}" value="{{ old($f['name'].'_latlng') }}">
-                                    <small class="text-gray-500">Gambar jalan di peta, koordinat akan otomatis terisi.</small>
+                                    <small class="text-gray-500">Pilih mode, lalu gambar di peta.</small>
                                 </div>
                             @endif
 
@@ -128,51 +137,104 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-
     <script>
-        @foreach($form->fields ?? [] as $index => $f)
-            @if($f['type'] === 'map_drawer')
-                const map{{$index}} = L.map('map_{{$index}}').setView([-8.0983, 112.1688], 12);
+    @foreach($form->fields ?? [] as $index => $f)
+        @if($f['type'] === 'map_drawer')
+            let mode{{$index}} = 'road';
 
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; OpenStreetMap &copy; CARTO',
-                    subdomains: 'abcd',
-                    maxZoom: 19
-                }).addTo(map{{$index}});
+            const map{{$index}} = L.map('map_{{$index}}').setView([-8.0983, 112.1688], 12);
 
-                const drawnItems{{$index}} = new L.FeatureGroup();
-                map{{$index}}.addLayer(drawnItems{{$index}});
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map{{$index}});
 
-                const drawControl{{$index}} = new L.Control.Draw({
-                    draw: { polygon:false, circle:false, rectangle:false, marker:false, circlemarker:false, polyline:true },
-                    edit: { featureGroup: drawnItems{{$index}} }
-                });
-                map{{$index}}.addControl(drawControl{{$index}});
+            const drawnItems{{$index}} = new L.FeatureGroup();
+            map{{$index}}.addLayer(drawnItems{{$index}});
 
-                map{{$index}}.on(L.Draw.Event.CREATED, function(e){
-                    const layer = e.layer;
-                    drawnItems{{$index}}.clearLayers();
+            const drawControl{{$index}} = new L.Control.Draw({
+                draw: {
+                    polygon:false,
+                    circle:false,
+                    rectangle:false,
+                    circlemarker:false,
+                    polyline:true,
+                    marker:true
+                },
+                edit: { featureGroup: drawnItems{{$index}} }
+            });
+            map{{$index}}.addControl(drawControl{{$index}});
+
+            function setMode{{$index}}(m) {
+                mode{{$index}} = m;
+                drawnItems{{$index}}.clearLayers();
+                document.getElementById('input_{{$index}}').value = '';
+                alert("Mode diubah ke: " + (m === 'road' ? "Gambar Jalan" : "Tandai Jembatan"));
+            }
+
+            map{{$index}}.on(L.Draw.Event.CREATED, function(e){
+                const layer = e.layer;
+                drawnItems{{$index}}.clearLayers();
+
+                // Jika mode jalan → polyline
+                if(mode{{$index}} === 'road' && layer instanceof L.Polyline) {
                     drawnItems{{$index}}.addLayer(layer);
                     const latlngs = layer.getLatLngs().map(ll => [ll.lat, ll.lng]);
-                    document.getElementById('input_{{$index}}').value = JSON.stringify(latlngs);
-                });
+                    document.getElementById('input_{{$index}}').value = JSON.stringify({
+                        type: 'road',
+                        coords: latlngs
+                    });
+                }
 
-                map{{$index}}.on('draw:edited draw:deleted', function(){
-                    const layers = drawnItems{{$index}}.getLayers();
-                    if(layers.length > 0){
-                        const latlngs = layers[0].getLatLngs().map(ll => [ll.lat, ll.lng]);
-                        document.getElementById('input_{{$index}}').value = JSON.stringify(latlngs);
-                    } else {
-                        document.getElementById('input_{{$index}}').value = '';
+                // Jika mode jembatan → marker
+                if(mode{{$index}} === 'bridge' && layer instanceof L.Marker) {
+                    drawnItems{{$index}}.addLayer(layer);
+                    const p = layer.getLatLng();
+                    document.getElementById('input_{{$index}}').value = JSON.stringify({
+                        type: 'bridge',
+                        coord: [p.lat, p.lng]
+                    });
+                }
+            });
+
+            map{{$index}}.on('draw:edited draw:deleted', function(){
+                const layers = drawnItems{{$index}}.getLayers();
+                if(layers.length > 0){
+                    const layer = layers[0];
+
+                    if(layer instanceof L.Polyline){
+                        const latlngs = layer.getLatLngs().map(ll => [ll.lat, ll.lng]);
+                        document.getElementById('input_{{$index}}').value = JSON.stringify({
+                            type: 'road',
+                            coords: latlngs
+                        });
                     }
-                });
 
-                @if(!empty(old($f['name'].'_latlng')))
-                    const coords{{$index}} = JSON.parse(@json(old($f['name'].'_latlng')));
-                    const polyline{{$index}} = L.polyline(coords{{$index}}).addTo(drawnItems{{$index}});
-                    map{{$index}}.fitBounds(polyline{{$index}}.getBounds());
-                @endif
+                    if(layer instanceof L.Marker){
+                        const p = layer.getLatLng();
+                        document.getElementById('input_{{$index}}').value = JSON.stringify({
+                            type: 'bridge',
+                            coord: [p.lat, p.lng]
+                        });
+                    }
+                } else {
+                    document.getElementById('input_{{$index}}').value = '';
+                }
+            });
+
+            @if(!empty(old($f['name'].'_latlng')))
+                const saved{{$index}} = JSON.parse(@json(old($f['name'].'_latlng')));
+                if(saved{{$index}}.type === 'road'){
+                    const poly = L.polyline(saved{{$index}}.coords).addTo(drawnItems{{$index}});
+                    map{{$index}}.fitBounds(poly.getBounds());
+                } else if(saved{{$index}}.type === 'bridge'){
+                    const marker = L.marker(saved{{$index}}.coord).addTo(drawnItems{{$index}});
+                    map{{$index}}.setView(saved{{$index}}.coord, 16);
+                }
             @endif
-        @endforeach
-    </script>
+        @endif
+    @endforeach
+</script>
+
 </x-app-layout>

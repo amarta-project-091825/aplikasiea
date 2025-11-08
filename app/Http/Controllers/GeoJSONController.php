@@ -85,7 +85,7 @@ class GeoJSONController extends Controller
         return response()->json($fieldNames);
     }
 
-   public function importGeoJSON(Request $request)
+    public function importGeoJSON(Request $request)
 {
     $request->validate([
         'features' => 'required|array',
@@ -95,7 +95,7 @@ class GeoJSONController extends Controller
     $features = $request->input('features');
     $formId = $request->input('form_id');
 
-    // Ambil field dari form
+    // Ambil struktur form untuk tahu field mana yang valid
     $form = \App\Models\Form::find($formId);
     $fieldNames = [];
     if ($form) {
@@ -114,52 +114,69 @@ class GeoJSONController extends Controller
 
         if (!$geometry || empty($geometry['coordinates'])) continue;
 
-        $coords = $geometry['coordinates']; // lng, lat format
+        $geomType = strtolower($geometry['type']); // Point / LineString / Polygon
+        $coords = $geometry['coordinates'];
 
-        // ✅ Convert to map_drawer format [lat, lng]
-        $latlng = array_map(fn($c) => [floatval($c[1]), floatval($c[0])], $coords);
+        // ✅ Convert ke format map_drawer
+        $converted = null;
 
+        if ($geomType === 'linestring') {
+            // LineString => road
+            $latlng = array_map(fn($c) => [floatval($c[1]), floatval($c[0])], $coords);
+            $converted = [
+                'type' => 'road',
+                'coords' => $latlng
+            ];
+        } elseif ($geomType === 'point') {
+            // Point => bridge
+            $converted = [
+                'type' => 'bridge',
+                'coord' => [floatval($coords[1]), floatval($coords[0])]
+            ];
+        } else {
+            // ❌ bentuk selain itu belum di-support
+            $skipped++;
+            continue;
+        }
+
+        // Build data untuk simpan
         $dataToSave = [];
         foreach ($fieldNames as $fname) {
             $dataToSave[$fname] = $props[$fname] ?? null;
         }
 
-        // ✅ Simpan koordinat ke field baru
-        $dataToSave['koordinat_latlng'] = $latlng;
+        $dataToSave['koordinat_latlng'] = $converted;
 
-        // Cari apakah sudah ada record dengan koordinat start yang sama
-        $existingRecord = $existingRecords->first(function ($r) use ($latlng) {
+        // ✅ Cek apakah data duplikat berdasarkan titik pertama
+        $existingRecord = $existingRecords->first(function ($r) use ($converted) {
             $old = $r->data['koordinat_latlng'] ?? null;
-            if (!$old || !is_array($old) || count($old) === 0) return false;
+            if (!$old) return false;
 
-            // Bandingkan titik pertama
-            return abs($old[0][0] - $latlng[0][0]) < 0.000001 &&
-                   abs($old[0][1] - $latlng[0][1]) < 0.000001;
+            if (($old['type'] ?? null) !== ($converted['type'] ?? null)) return false;
+
+            if ($old['type'] === 'road') {
+                return abs($old['coords'][0][0] - $converted['coords'][0][0]) < 0.000001 &&
+                       abs($old['coords'][0][1] - $converted['coords'][0][1]) < 0.000001;
+            }
+
+            if ($old['type'] === 'bridge') {
+                return abs($old['coord'][0] - $converted['coord'][0]) < 0.000001 &&
+                       abs($old['coord'][1] - $converted['coord'][1]) < 0.000001;
+            }
+
+            return false;
         });
 
         if ($existingRecord) {
-            // Merge update data
             $existingData = is_string($existingRecord->data)
                 ? json_decode($existingRecord->data, true)
                 : $existingRecord->data;
 
-            $updated = false;
-            foreach ($dataToSave as $key => $value) {
-                if ($value !== null && ($existingData[$key] ?? null) !== $value) {
-                    $existingData[$key] = $value;
-                    $updated = true;
-                }
-            }
-
-            if ($updated) {
-                $existingRecord->update(['data' => $existingData]);
-                $count++;
-            } else {
-                $skipped++;
-            }
+            $existingData['koordinat_latlng'] = $converted;
+            $existingRecord->update(['data' => $existingData]);
+            $count++;
 
         } else {
-            // Simpan baru
             FormSubmission::create([
                 'form_id' => $formId,
                 'data' => $dataToSave,
@@ -168,12 +185,13 @@ class GeoJSONController extends Controller
         }
     }
 
-    $message = "$count fitur berhasil diimport, $skipped dilewati (invalid/duplikat).";
+    $message = "$count fitur berhasil diimport, $skipped dilewati.";
 
     if ($request->wantsJson() || $request->isJson()) {
         return response()->json(['success' => true, 'message' => $message]);
     }
 
     return back()->with('success', $message);
-  }
+}
+
 }

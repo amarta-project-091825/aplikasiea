@@ -73,7 +73,7 @@ class FormSubmissionTableController extends Controller
 
         return view('admin.submission-table.edit', compact('submission', 'form', 'allFields'));
     }
-
+    
     public function update(Request $request, $id)
     {
         $submission = FormSubmission::with('form')->findOrFail($id);
@@ -82,6 +82,7 @@ class FormSubmissionTableController extends Controller
         $data = $submission->data ?? [];
         $files = $submission->files ?? [];
 
+        // Update setiap field form biasa
         foreach ($form->fields as $field) {
             $name = $field['name'];
             $type = $field['type'] ?? 'text';
@@ -104,6 +105,21 @@ class FormSubmissionTableController extends Controller
             }
         }
 
+        // ✅ SIMPAN DATA KOORDINAT MAP DRAWER JUGA
+        if ($request->has('koordinat_latlng')) {
+            $raw = $request->input('koordinat_latlng');
+
+            if (!empty($raw)) {
+                // Decode & simpan dalam bentuk array
+                $decoded = json_decode($raw, true);
+                $data['koordinat_latlng'] = $decoded ?: $raw; 
+            } else {
+                // Jika kosong → hapus koordinat
+                unset($data['koordinat_latlng']);
+            }
+        }
+
+        // Simpan
         $submission->data = $data;
         $submission->files = $files;
         $submission->save();

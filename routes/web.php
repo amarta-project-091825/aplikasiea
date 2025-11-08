@@ -45,6 +45,8 @@ Route::middleware(['auth','verified'])
 
         // admin atau petugas data
         Route::middleware('role:admin,1,petugas-data,2')->group(function () {
+            Route::delete('/admin/submission/batch', [FormSubmissionTableController::class, 'batchDestroy'])
+            ->name('submission.batchDestroy');
             Route::get('/submission-table', [FormSubmissionTableController::class, 'index'])->name('submission.table');
             Route::get('/submission-table/{id}/edit', [FormSubmissionTableController::class, 'edit'])->name('submission.edit');
             Route::put('/submission-table/{id}', [FormSubmissionTableController::class, 'update'])->name('submission.update');
