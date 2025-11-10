@@ -64,34 +64,56 @@
                                     </td>
                                     @foreach($columns as $col)
                                         <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                                            @php
-                                                $val = $s->decoded_data[$col] ?? '-';
-                                            @endphp
-                                           @if($col === 'koordinat_latlng' && !empty($val))
-                                                <a href="{{ route('peta.index', ['submission_id' => $s->_id]) }}"
-                                                class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-xs">
-                                                    Lihat di Peta
-                                                </a>
-                                            @elseif(is_array($val))
-                                                @php
-                                                    $isAssoc = array_keys($val) !== range(0, count($val) - 1);
-                                                @endphp
+                                        @php
+                                            // safety: decoded_data sudah disiapkan di controller, tapi files kadang string JSON
+                                            $val = $s->decoded_data[$col] ?? '-';
+                                            $filesObj = $s->files ?? [];
+                                            if (is_string($filesObj)) {
+                                                $filesObj = json_decode($filesObj, true) ?: [];
+                                            }
+                                            $fileObj = $filesObj[$col] ?? null;
+                                        @endphp
 
-                                                @if($isAssoc)
-                                                    <div class="text-xs text-gray-600 dark:text-gray-300">
-                                                        @foreach($val as $k => $v)
-                                                            <div>{{ $k }}: {{ is_array($v) ? json_encode($v) : $v }}</div>
-                                                        @endforeach
-                                                    </div>
-                                                @else
-                                                    {{ implode(', ', array_map(fn($v) => is_array($v) ? json_encode($v) : $v, $val)) }}
-                                                @endif
-                                            @elseif(is_string($val) && Str::startsWith($val, 'data:image'))
-                                                <img src="{{ $val }}" class="h-16 w-16 object-cover rounded">
-                                            @else
-                                                {{ $val }}
+                                        {{-- Tombol lihat peta --}}
+                                        @if($col === 'koordinat_latlng' && !empty($val))
+                                            <a href="{{ route('peta.index', ['submission_id' => $s->_id]) }}"
+                                            class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-xs">
+                                                Lihat di Peta
+                                            </a>
+
+                                        {{-- Jika nilai adalah array (biasa / asosiatif) --}}
+                                        @elseif(is_array($val))
+                                            @php
+                                                $isAssoc = array_keys($val) !== range(0, count($val) - 1);
+                                            @endphp
+
+                                            {{-- Kalau ada file terkait (contoh: foto_jalan di files) tampilkan preview --}}
+                                            @if($fileObj && isset($fileObj['data']) && Str::startsWith($fileObj['data'], 'data:image'))
+                                                <div class="mb-2">
+                                                    <img src="{{ $fileObj['data'] }}" class="h-16 w-16 object-cover rounded">
+                                                </div>
                                             @endif
-                                        </td>
+
+                                            @if($isAssoc)
+                                                <div class="text-xs text-gray-600 dark:text-gray-300">
+                                                    @foreach($val as $k => $v)
+                                                        <div>{{ $k }}: {{ is_array($v) ? json_encode($v) : $v }}</div>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                {{ implode(', ', array_map(fn($v) => is_array($v) ? json_encode($v) : $v, $val)) }}
+                                            @endif
+
+                                        {{-- Kalau string image langsung di data --}}
+                                        @elseif(is_string($val) && Str::startsWith($val, 'data:image'))
+                                            <img src="{{ $val }}" class="h-16 w-16 object-cover rounded">
+
+                                        {{-- Kalau string biasa tampilkan teks (atau nama file) --}}
+                                        @else
+                                            {{ is_array($val) ? json_encode($val) : $val }}
+                                        @endif
+                                    </td>
+
                                     @endforeach
                                     <td class="px-6 py-4 text-right text-sm">
                                         <a href="{{ route('admin.submission.edit',$s->_id) }}"
