@@ -71,22 +71,28 @@
     left: 100%;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - Burgundy Theme */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #f8f9fa;
+    border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(to bottom, #6366f1, #8b5cf6);
-    border-radius: 4px;
+    background: linear-gradient(to bottom, #7f1d1d, #5a1515);
+    border-radius: 5px;
+    border: 2px solid #f8f9fa;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(to bottom, #4f46e5, #7c3aed);
+    background: linear-gradient(to bottom, #991b1b, #7f1d1d);
+}
+
+::-webkit-scrollbar-corner {
+    background: #f8f9fa;
 }
 
 /* Login page specific styles */
@@ -178,20 +184,144 @@ nav a:hover::before {
     box-shadow: 0 0 20px rgba(255, 184, 0, 0.3);
 }
 
-/* Smooth scrollbar for sidebar */
+/* Smooth scrollbar for sidebar - Burgundy Theme */
 aside nav::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
 }
 
 aside nav::-webkit-scrollbar-track {
-    background: rgba(255, 184, 0, 0.1);
+    background: rgba(127, 29, 29, 0.1);
+    border-radius: 4px;
 }
 
 aside nav::-webkit-scrollbar-thumb {
-    background: rgba(255, 184, 0, 0.3);
-    border-radius: 3px;
+    background: linear-gradient(to bottom, #7f1d1d, #5a1515);
+    border-radius: 4px;
+    border: 1px solid rgba(127, 29, 29, 0.2);
 }
 
 aside nav::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 184, 0, 0.5);
+    background: linear-gradient(to bottom, #991b1b, #7f1d1d);
+}
+
+/* Dashboard specific animations */
+@keyframes slideInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(127, 29, 29, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 20px 10px rgba(127, 29, 29, 0.2);
+    }
+}
+
+/* Card hover effects */
+.dashboard-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Progress bar animations */
+.progress-bar {
+    transition: width 1s ease-in-out;
+}
+
+/* Number counter animation */
+@keyframes countUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.counter {
+    animation: countUp 0.6s ease-out;
+}
+
+/* Status indicator pulse */
+@keyframes status-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.status-indicator {
+    animation: status-pulse 2s ease-in-out infinite;
+}
+
+/* Notification slide in */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.notification {
+    animation: slideInRight 0.3s ease-out;
+}
+
+/* Welcome section enhancements */
+.welcome-gradient {
+    background: linear-gradient(135deg, #7f1d1d 0%, #5a1515 50%, #7f1d1d 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 8s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Clock display animation */
+.clock-display {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 20px rgba(255, 184, 0, 0.5);
+}
+
+/* User avatar icon pulse */
+.user-icon {
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Welcome section hover effect */
+.welcome-card {
+    transition: all 0.3s ease;
+}
+
+.welcome-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px rgba(127, 29, 29, 0.3);
 }

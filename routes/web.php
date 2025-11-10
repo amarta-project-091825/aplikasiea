@@ -1,5 +1,6 @@
 <?php
 use App\Http\Controllers\Admin\FormController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DynamicFormController;
 use App\Http\Controllers\FormSubmissionPublicController;
 use App\Http\Controllers\FormSubmissionTableController;
@@ -17,9 +18,8 @@ Route::get('/', function () {
    return redirect()->route('login');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/api/dashboard/realtime', [DashboardController::class, 'getRealtimeData'])->middleware(['auth', 'verified'])->name('dashboard.realtime');
 
 
 Route::middleware('auth')->group(function () {
