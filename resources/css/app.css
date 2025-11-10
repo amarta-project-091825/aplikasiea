@@ -149,3 +149,49 @@ input[type="checkbox"]:checked {
 .animate-pulse-slow {
     animation: pulse-slow 3s ease-in-out infinite;
 }
+
+/* AMARTA Theme - Burgundy & Gold */
+/* Sidebar navigation hover effects */
+nav a {
+    position: relative;
+}
+
+nav a::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    background: #ffb800;
+    transition: height 0.3s ease;
+    border-radius: 0 3px 3px 0;
+}
+
+nav a:hover::before {
+    height: 70%;
+}
+
+/* Active state glow effect */
+.bg-\[\#ffb800\] {
+    box-shadow: 0 0 20px rgba(255, 184, 0, 0.3);
+}
+
+/* Smooth scrollbar for sidebar */
+aside nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+aside nav::-webkit-scrollbar-track {
+    background: rgba(255, 184, 0, 0.1);
+}
+
+aside nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 184, 0, 0.3);
+    border-radius: 3px;
+}
+
+aside nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 184, 0, 0.5);
+}
