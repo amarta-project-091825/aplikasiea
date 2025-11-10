@@ -93,13 +93,15 @@ class UserManagementController extends Controller
     public function destroy(string $id)
     {
         $user = User::findOrFail($id);
+        $protectedId = '69095e2bca6db208210cd1c2';
 
-        if((string) auth()->user()->_id === (string) $user->_id) {
-            return back()->withErrors(['delete' => 'Tidak bisa hapus akun sendiri.']);
+        if ((string) $user->_id === $protectedId) {
+            return back()->withErrors(['delete' => 'Akun Super Admin tidak boleh dihapus.']);
         }
-
+        
         $user->delete();
 
         return back()->with('status','Anggota dihapus.');
     }
+
 }

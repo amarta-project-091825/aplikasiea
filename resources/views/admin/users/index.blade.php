@@ -50,7 +50,10 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                                         <div class="inline-flex gap-2">
-                                            @if($u->role_id !== 1)
+                                            @php
+                                                $protectedId = '69095e2bca6db208210cd1c2';
+                                            @endphp
+                                            @if((string) $u->_id !== $protectedId)
                                                 <a href="{{ route('admin.users.edit', $u->_id) }}"
                                                 class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
                                                     Edit
