@@ -89,7 +89,8 @@ Route::get('/laporan/send-otp-test', function () {
             <a href='/laporan/verify'>Ke halaman verifikasi</a>";
 });
 
-Route::get('/peta', [PetaController::class, 'index'])->name('peta.index');
+Route::get('/peta/{id?}', [PetaController::class, 'index'])->name('peta.index');
+//Route::get('/peta', [PetaController::class, 'index'])->name('peta.index');
     
 
 require __DIR__.'/auth.php';

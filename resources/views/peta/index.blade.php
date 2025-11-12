@@ -26,6 +26,8 @@
                 maxZoom: 19
             }).addTo(map);
 
+            let lastClickedLine = null;
+
             fetch("{{ url('/api/geojson/all') }}")
                 .then(res => res.json())
                 .then(data => {
@@ -58,23 +60,33 @@
 
                         // --- Popup content ---
                         let popupContent = '';
-                        if (type === 'road' && coords.length > 0) {
-                            const start = coords[0];
-                            const end = coords[coords.length - 1];
-                            popupContent = `<strong>${props.nama_jalan ?? 'Jalan'}</strong><br>
-                                            <strong>Start:</strong> [${start[0]}, ${start[1]}]<br>
-                                            <strong>End:</strong> [${end[0]}, ${end[1]}]<br>`;
-                            // tambahkan properti lain kecuali koordinat penuh
-                            Object.entries(props).forEach(([k,v]) => {
-                                if (k !== 'koordinat_latlng') popupContent += `<strong>${k}:</strong> ${v}<br>`;
-                            });
+                    if (type === 'road' && coords.length > 0) {
+                        const start = coords[0];
+                        const end = coords[coords.length - 1];
+                        popupContent = `<strong>${props.nama_jalan ?? 'Jalan'}</strong><br>
+                                        <strong>Start:</strong> [${start[0]}, ${start[1]}]<br>
+                                        <strong>End:</strong> [${end[0]}, ${end[1]}]<br>`;
+                        Object.entries(props).forEach(([k,v]) => {
+                            if (k !== 'koordinat_latlng') popupContent += `<strong>${k}:</strong> ${v}<br>`;
+                        });
 
-                            const latlngs = coords.map(c => [c[0], c[1]]);
-                            L.polyline(latlngs, { color: '#0074D9', weight: 3, opacity: 0.7 })
-                                .bindPopup(popupContent)
-                                .addTo(map);
+                        const latlngs = coords.map(c => [c[0], c[1]]);
+                        const line = L.polyline(latlngs, { color: '#0074D9', weight: 3, opacity: 0.7 })
+                            .bindPopup(popupContent)
+                            .addTo(map);
 
-                        } else if (type === 'bridge' && coords.length > 0) {
+                        // event klik buat highlight
+                        line.on('click', function() {
+                            // reset warna sebelumnya
+                            if (lastClickedLine && lastClickedLine !== line) {
+                                lastClickedLine.setStyle({ color: '#0074D9', weight: 3, opacity: 0.7 });
+                            }
+
+                            // ubah warna line yang diklik
+                            line.setStyle({ color: '#FF4136', weight: 5, opacity: 0.9 }); // warna merah terang
+                            lastClickedLine = line;
+                        });
+                    } else if (type === 'bridge' && coords.length > 0) {
                             const [lat, lng] = coords[0];
                             popupContent = `<strong>${props.nama_jembatan ?? 'Jembatan'}</strong><br>`;
                             Object.entries(props).forEach(([k,v]) => {
