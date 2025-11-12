@@ -89,58 +89,53 @@
                                     </td>
                                     @foreach($columns as $col)
                                         <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                                        @php
-                                            // safety: decoded_data sudah disiapkan di controller, tapi files kadang string JSON
-                                            $val = $s->decoded_data[$col] ?? '-';
-                                            $filesObj = $s->files ?? [];
-                                            if (is_string($filesObj)) {
-                                                $filesObj = json_decode($filesObj, true) ?: [];
-                                            }
-                                            $fileObj = $filesObj[$col] ?? null;
-                                        @endphp
-
-                                        {{-- Tombol lihat peta --}}
-                                        @if($col === 'koordinat_latlng' && !empty($val))
-                                            <a href="{{ route('peta.index', ['submission_id' => $s->_id]) }}"
-                                            class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 text-xs shadow-md">
-                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                                                </svg>
-                                                Lihat di Peta
-                                            </a>
-
-                                        {{-- Jika nilai adalah array (biasa / asosiatif) --}}
-                                        @elseif(is_array($val))
                                             @php
-                                                $isAssoc = array_keys($val) !== range(0, count($val) - 1);
+                                                $val = $s->decoded_data[$col] ?? '-';
+                                                $filesObj = $s->files ?? [];
+                                                if (is_string($filesObj)) {
+                                                    $filesObj = json_decode($filesObj, true) ?: [];
+                                                }
+                                                $fileObj = $filesObj[$col] ?? null;
+
+                                                $base64Image = null;
+
+                                        if ($fileObj && isset($fileObj['data']) && Str::startsWith($fileObj['data'], 'data:image')) {
+                                            // gambar dari kolom files (form_submissions)
+                                            $base64Image = $fileObj['data'];
+                                        } elseif (is_array($val) && isset($val['data']) && Str::startsWith($val['data'], 'data:image')) {
+                                            // gambar dari kolom data (laporan_selesais)
+                                            $base64Image = $val['data'];
+                                        } elseif (is_string($val) && Str::startsWith($val, 'data:image')) {
+                                            // fallback, kalau langsung base64 string
+                                            $base64Image = $val;
+                                        }
                                             @endphp
 
-                                            {{-- Kalau ada file terkait (contoh: foto_jalan di files) tampilkan preview --}}
-                                            @if($fileObj && isset($fileObj['data']) && Str::startsWith($fileObj['data'], 'data:image'))
-                                                <div class="mb-2">
-                                                    <img src="{{ $fileObj['data'] }}" class="h-20 w-20 object-cover rounded-lg shadow-md border-2 border-gray-200 dark:border-gray-600">
-                                                </div>
-                                            @endif
+                                            @if($col === 'koordinat_latlng' && !empty($val))
+                                                <a href="{{ route('peta.index', ['submission_id' => $s->_id]) }}"
+                                                    class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 text-xs shadow-md">
+                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                                                    </svg>
+                                                    Lihat di Peta
+                                                </a>
 
-                                            @if($isAssoc)
-                                                <div class="text-xs text-gray-600 dark:text-gray-300">
-                                                    @foreach($val as $k => $v)
-                                                        <div>{{ $k }}: {{ is_array($v) ? json_encode($v) : $v }}</div>
-                                                    @endforeach
-                                                </div>
+                                            @elseif($base64Image)
+                                                <button type="button"
+                                                    onclick="showImageModal('{{ $base64Image }}')"
+                                                    class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-300 transform hover:scale-105 text-xs shadow-md">
+                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M15 10l4.553 2.276A1 1 0 0120 13.382v3.236a1 1 0 01-.447.894L15 20m0-10l-4.553 2.276A1 1 0 0010 13.382v3.236a1 1 0 00.447.894L15 20m0-10V4m0 6l-5-2m0 2l5-2"/>
+                                                    </svg>
+                                                    Lihat Gambar
+                                                </button>
+
                                             @else
-                                                {{ implode(', ', array_map(fn($v) => is_array($v) ? json_encode($v) : $v, $val)) }}
+                                                {{ is_array($val) ? json_encode($val) : $val }}
                                             @endif
-
-                                        {{-- Kalau string image langsung di data --}}
-                                        @elseif(is_string($val) && Str::startsWith($val, 'data:image'))
-                                            <img src="{{ $val }}" class="h-20 w-20 object-cover rounded-lg shadow-md border-2 border-gray-200 dark:border-gray-600">
-
-                                        {{-- Kalau string biasa tampilkan teks (atau nama file) --}}
-                                        @else
-                                            {{ is_array($val) ? json_encode($val) : $val }}
-                                        @endif
-                                    </td>
+                                        </td>
 
                                     @endforeach
                                     <td class="px-6 py-4 text-right text-sm">
@@ -170,6 +165,7 @@
                             @endforelse
                         </tbody>
                     </table>
+
                 </div>
 
                 {{-- Pagination --}}
@@ -179,6 +175,16 @@
                     </div>
                 @endif
             </form>
+             <div id="imageModal"
+                class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg overflow-hidden shadow-lg max-w-lg animate-fade-in-up">
+                    <div class="p-2 flex justify-between items-center bg-gray-100 border-b">
+                        <span class="text-sm font-medium text-gray-700">Preview Gambar</span>
+                        <button onclick="closeImageModal()" class="text-gray-500 hover:text-gray-800">&times;</button>
+                    </div>
+                    <img id="modalImage" src="" class="w-full h-auto">
+                </div>
+            </div>
         </div>
     </div>
     </div>
@@ -202,5 +208,14 @@
                 });
             });
         });
+         window.showImageModal = function (src) {
+        document.getElementById('modalImage').src = src;
+        document.getElementById('imageModal').classList.remove('hidden');
+    }
+
+    window.closeImageModal = function () {
+        document.getElementById('modalImage').src = '';
+        document.getElementById('imageModal').classList.add('hidden');
+    }
     </script>
 </x-app-layout>

@@ -50,13 +50,13 @@ class DashboardController extends Controller
         // Get recent submissions
         $recent_submissions = FormSubmission::with('form')
             ->latest()
-            ->take(5)
+            ->take(10)
             ->get();
         
         // Get recent laporan
         $recent_laporan = LaporanMasyarakat::with('status')
             ->latest()
-            ->take(5)
+            ->take(10)
             ->get();
         
         return view('dashboard', compact('stats', 'recent_submissions', 'recent_laporan'));
