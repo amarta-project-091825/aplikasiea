@@ -79,10 +79,11 @@ class DynamicFormController extends Controller
         foreach ($form->fields as $f) {
             $latlngField = $f['name'].'_latlng';
             if ($f['type'] === 'map_drawer' && $request->has($latlngField)) {
-                $validated[$latlngField] = $request->input($latlngField); // simpan string JSON koordinat
+                $raw = $request->input($latlngField);
+                $decoded = json_decode($raw, true);
+                $validated[$latlngField] = json_last_error() === JSON_ERROR_NONE ? $decoded : $raw;
             }
         }
-        
         // Upload file (jika ada)
         $filesSaved = [];
         foreach ($form->fields as $f) {
@@ -99,15 +100,12 @@ class DynamicFormController extends Controller
                 }
             }
         }
-
-
         $submission = FormSubmission::create([
             'form_id'      => $form->_id,
             'data'         => $validated,
             'files'        => $filesSaved,
             'submitted_by' => Auth::id(),
         ]);
-
         return redirect()->route('forms.show', $form->slug)->with('status','Data terkirim. Terima kasih!');
     }
 }
