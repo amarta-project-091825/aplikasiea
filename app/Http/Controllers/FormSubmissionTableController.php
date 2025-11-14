@@ -6,6 +6,8 @@ use App\Models\Form;
 use App\Models\FormSubmission;
 use Illuminate\Http\Request;
 use App\Models\LaporanSelesai;
+use Illuminate\Support\Facades\Log;
+
 
 class FormSubmissionTableController extends Controller
 {
@@ -158,14 +160,43 @@ class FormSubmissionTableController extends Controller
 
     public function batchDestroy(Request $request)
 {
-    $ids = $request->input('ids', []);
+    $ids = $request->input('ids', $request->input('selected_ids'));
+    $formId = $request->form_id;
+
+     \Log::info('MASUK batchDestroy', [
+        'selected_ids' => $request->selected_ids,
+        'form_id' => $request->form_id,
+    ]);
+
     if (empty($ids)) {
         return back()->with('error', 'Tidak ada data yang dipilih.');
     }
 
-    $deletedCount = FormSubmission::whereIn('_id', $ids)->delete();
+    $form = Form::find($formId);
 
-    return back()->with('success', $deletedCount . ' submission berhasil dihapus.');
+     \Log::info('FORM ID YANG DITERIMA', ['form_id' => $formId]);
+
+    if (!$form) {
+        return back()->with('error', 'Form tidak ditemukan.');
+    }
+
+    \Log::info('FORM DITEMUKAN', [
+        'form_name' => $form->name,
+        'is_special' => $form->is_special ?? null,
+    ]);
+
+   $formLaporanId = '68ddd553e341db5b990dcb92';
+
+if ($formId == $formLaporanId) {
+    Log::info('HAPUS DI LaporanSelesai', ['ids' => $ids]);
+    LaporanSelesai::whereIn('_id', $ids)->delete();
+} else {
+    Log::info('HAPUS DI FormSubmission', ['ids' => $ids]);
+    FormSubmission::whereIn('_id', $ids)->delete();
 }
+
+    return back()->with('success', 'Data berhasil dihapus.');
+}
+
 
 }

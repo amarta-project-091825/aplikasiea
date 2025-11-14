@@ -48,7 +48,7 @@
                 <form method="POST" action="{{ route('admin.submission.batchDestroy') }}" onsubmit="return confirm('Yakin hapus semua yang dipilih?')">
                     @csrf
                     @method('DELETE')
-
+                    <input type="hidden" name="form_id" value="{{ $currentForm->_id }}">
                     <div class="p-4 bg-gray-50 dark:bg-gray-900/20 border-b border-gray-200 dark:border-gray-700 flex justify-end">
                         <button type="submit"
                             class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg"
@@ -139,13 +139,16 @@
 
                                     @endforeach
                                     <td class="px-6 py-4 text-right text-sm">
-                                        <a href="{{ route('admin.submission.edit',$s->_id) }}"
-                                            class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg text-blue-700 hover:from-blue-100 hover:to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 dark:border-blue-800 dark:text-blue-300 transition-all duration-300 transform hover:scale-105">
-                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                            </svg>
-                                            Edit
-                                        </a>
+                                        @if ($currentForm->_id !== '68ddd553e341db5b990dcb92')
+                                            <a href="{{ route('admin.submission.edit', $s->_id) }}"
+                                                class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg text-blue-700 hover:from-blue-100 hover:to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 dark:border-blue-800 dark:text-blue-300 transition-all duration-300 transform hover:scale-105">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                </svg>
+                                                Edit
+                                            </a>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty
